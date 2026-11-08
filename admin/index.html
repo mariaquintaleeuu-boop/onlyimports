@@ -95,6 +95,11 @@ textarea.in{resize:vertical;min-height:70px}
 .photo .btn{padding:10px 14px}
 .upl{position:relative;overflow:hidden;display:inline-block}
 .upl input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.extra-photos{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.extra-photos .ph{position:relative;width:70px;height:70px}
+.extra-photos .ph img{width:70px;height:70px;object-fit:contain;border-radius:12px;background:var(--soft)}
+.extra-photos .ph button{position:absolute;top:-6px;right:-6px;width:24px;height:24px;border-radius:50%;border:0;background:var(--bad);color:#fff;font-size:14px;line-height:1}
+.extra-photos .addph{width:70px;height:70px;border:2px dashed var(--line);border-radius:12px;display:grid;place-items:center;font-size:26px;color:var(--muted)}
 .cat-pick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .cat-pick label{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);border-radius:99px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
 .cat-pick input{accent-color:var(--purple)}
@@ -240,6 +245,8 @@ textarea.in{resize:vertical;min-height:70px}
       <p class="hint" style="font-size:12px;color:var(--muted);margin:6px 0 0">Se achica sola para que cargue rápido.</p>
     </div>
   </div>
+  <div class="f" style="font-size:13px;font-weight:600;margin-bottom:6px">Más fotos (se ven al abrir el producto)</div>
+  <div class="extra-photos" id="e-photos"></div>
   <label class="f"><span>Nombre</span><input class="in" id="e-name"></label>
   <div class="row">
     <label class="f"><span>Marca</span><input class="in" id="e-brand" list="dl-brands"></label>
@@ -266,6 +273,7 @@ textarea.in{resize:vertical;min-height:70px}
     </div>
   </div>
 
+  <label class="f"><span>Descripción (opcional)</span><textarea class="in" id="e-desc" rows="4" placeholder="Para qué sirve, tamaño, cómo se usa..."></textarea></label>
   <label class="f"><span>Link de pago de Mercado Pago (opcional)</span><input class="in" id="e-mp" type="url" placeholder="https://mpago.la/..."></label>
 
   <div class="sheet-actions">
@@ -481,6 +489,7 @@ function openEditor(id) {
   $('#e-del').classList.toggle('hidden', !src);
   $('#e-name').value = editing.name; $('#e-brand').value = editing.brand || ''; $('#e-type').value = editing.type || '';
   $('#e-price').value = editing.price || ''; $('#e-offer').value = editing.offer || 0; $('#e-mp').value = editing.mp || '';
+  editing.images = editing.images || []; $('#e-desc').value = editing.desc || '';
   $('#e-hasvar').checked = editing.variants.length > 0;
   renderEditor();
   $('#sheet').classList.remove('hidden'); $('#sheet-bg').classList.remove('hidden');
@@ -489,6 +498,8 @@ function openEditor(id) {
 function closeEditor() { $('#sheet').classList.add('hidden'); $('#sheet-bg').classList.add('hidden'); editing = null; }
 function renderEditor() {
   $('#e-img').src = imgSrc(editing.img) || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg"/%3E';
+  $('#e-photos').innerHTML = editing.images.map((src, i) => '<div class="ph"><img src="' + esc(imgSrc(src)) + '" alt=""><button type="button" data-delph="' + i + '" aria-label="Quitar foto">×</button></div>').join('') +
+    '<label class="addph upl" title="Agregar foto">＋<input type="file" accept="image/*" id="e-addph"></label>';
   const cats = allCats(); catsOf(editing).forEach((c) => { if (!cats.includes(c)) cats.push(c); });
   $('#e-cats').innerHTML = cats.map((c) => '<label><input type="checkbox" value="' + esc(c) + '"' + (catsOf(editing).includes(c) ? ' checked' : '') + '> ' + esc(c) + '</label>').join('');
   const hasVar = $('#e-hasvar').checked;
@@ -528,6 +539,12 @@ $('#e-file').addEventListener('change', async (e) => {
   if (path) { editing.img = path; renderEditor(); }
   e.target.value = '';
 });
+$('#e-photos').addEventListener('click', (e) => { const b = e.target.closest('[data-delph]'); if (b) { editing.images.splice(+b.dataset.delph, 1); renderEditor(); } });
+$('#e-photos').addEventListener('change', async (e) => {
+  if (e.target.id !== 'e-addph' || !e.target.files[0]) return;
+  const path = await uploadPhoto(e.target.files[0], ($('#e-name').value || 'producto') + '-extra');
+  if (path) { editing.images.push(path); renderEditor(); }
+});
 $('#e-addcat').addEventListener('click', () => {
   const c = $('#e-newcat').value.trim(); if (!c) return;
   editing.cat = [...new Set(catsOf(editing).concat(c))];
@@ -549,7 +566,7 @@ $('#e-ok').addEventListener('click', () => {
   const p = {
     id: editing.id, name, brand: $('#e-brand').value.trim(), cat: catsOf(editing), type: $('#e-type').value.trim(),
     price, offer, stock: hasVar ? variants.reduce((a, v) => a + v.stock, 0) : +editing.stock || 0,
-    img: editing.img || '', mp: $('#e-mp').value.trim(), variants
+    img: editing.img || '', images: editing.images || [], desc: $('#e-desc').value.trim(), mp: $('#e-mp').value.trim(), variants
   };
   const i = products.findIndex((x) => x.id === p.id);
   if (i >= 0) products[i] = p; else products.unshift(p);
