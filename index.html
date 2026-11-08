@@ -176,6 +176,27 @@ footer a:hover{color:#c2367a}
 .send svg{width:22px;height:22px;fill:#fff}
 .send:disabled{opacity:.5;cursor:not-allowed}
 .cart-empty{color:var(--muted);text-align:center;padding:40px 0}
+.hidden{display:none!important}
+.drawer header h2{flex:1;margin-left:4px}
+.back{border:0;background:#f6effa;width:38px;height:38px;border-radius:50%;font-size:26px;line-height:1;color:var(--ink);margin-right:8px}
+.checkout{flex:1;overflow:auto;padding:16px 22px}
+.fld{display:block;margin-bottom:14px;font-size:13px;font-weight:600}
+.fld>span{display:block;margin-bottom:6px}
+.fld input:not([type=radio]){width:100%;border:2px solid #ead9ff;border-radius:12px;padding:11px 12px;font:inherit;font-size:16px;color:var(--ink);outline:none;background:#fff}
+.fld input:focus{border-color:var(--purple)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg label{display:flex;align-items:center;gap:8px;border:2px solid #ead9ff;border-radius:12px;padding:10px;font-weight:600;cursor:pointer}
+.seg label:has(input:checked){border-color:var(--purple);background:#f6effa}
+.seg input{accent-color:var(--purple)}
+.addr-row{display:flex;gap:8px}
+.mini{border:0;border-radius:12px;padding:10px 14px;font-weight:700;background:#f3e9fa;color:var(--ink);white-space:nowrap}
+.mini.full{width:100%;margin:8px 0 14px}
+.map{height:240px;border-radius:16px;overflow:hidden;background:#f6effa;border:2px solid #ead9ff;position:relative;z-index:0}
+.map-loading{margin:0;padding:100px 0;text-align:center;color:var(--muted);font-size:13px}
+.map-hint{margin:-6px 0 8px;font-size:12px;color:var(--muted)}
+.pin{width:34px;height:44px}
+.pickup-note{background:#f6effa;border-radius:12px;padding:12px;font-size:13px;margin:0 0 14px}
+.form-err{color:#d64545;font-size:13px;font-weight:600;margin:4px 0 0;min-height:1em}
 .toast{position:fixed;left:50%;top:18px;z-index:50;white-space:nowrap;transform:translate(-50%,-120px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:999px;font-weight:600;font-size:14px;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
 .toast.show{transform:translate(-50%,0)}
 
@@ -311,12 +332,33 @@ footer a:hover{color:#c2367a}
   <nav class="menu-body" id="menu-body"></nav>
 </aside>
 <aside class="drawer" id="drawer" aria-label="Mi pedido">
-  <header><h2>Mi pedido</h2><button class="close" id="close-cart" aria-label="Cerrar">×</button></header>
+  <header><button class="back hidden" id="back-cart" aria-label="Volver al pedido">‹</button><h2 id="drawer-title">Mi pedido</h2><button class="close" id="close-cart" aria-label="Cerrar">×</button></header>
   <ul class="items" id="items"></ul>
+  <form class="checkout hidden" id="checkout" novalidate>
+    <label class="fld"><span>Tu nombre</span><input id="c-name" autocomplete="name" placeholder="Nombre y apellido" required></label>
+    <div class="fld"><span>¿Cómo lo recibís?</span>
+      <div class="seg">
+        <label><input type="radio" name="delivery" value="envio" checked> Envío a domicilio</label>
+        <label><input type="radio" name="delivery" value="retiro"> Retiro en persona</label>
+      </div>
+    </div>
+    <div id="ship-fields">
+      <label class="fld"><span>Dirección</span>
+        <div class="addr-row"><input id="c-address" autocomplete="street-address" placeholder="Calle, número, localidad"><button type="button" class="mini" id="c-find">Buscar</button></div>
+      </label>
+      <p class="map-hint">Tocá el mapa o mové el pin hasta tu casa.</p>
+      <div class="map" id="map"><p class="map-loading">Cargando mapa…</p></div>
+      <button type="button" class="mini full" id="c-locate">📍 Usar mi ubicación actual</button>
+      <label class="fld"><span>Piso / depto / entre calles (opcional)</span><input id="c-extra" placeholder="Ej: 3° B, timbre 2"></label>
+    </div>
+    <p class="pickup-note hidden" id="pickup-note"></p>
+    <label class="fld"><span>Notas (opcional)</span><input id="c-notes" placeholder="Horario, aclaraciones..."></label>
+    <p class="form-err" id="c-err"></p>
+  </form>
   <footer>
     <div class="total"><span>Total</span><span id="total">$0</span></div>
     <p class="total-transfer">Con transferencia: <b id="total-transfer">$0</b></p>
-    <button class="send" id="send"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2z"/></svg>Enviar pedido por WhatsApp</button>
+    <button class="send" id="send"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2z"/></svg><span id="send-label">Continuar con la entrega</span></button>
   </footer>
 </aside>
 
@@ -564,20 +606,136 @@ function start(STORE, PRODUCTS) {
     if (dec) { const k = dec.dataset.dec; cart[k]--; if (cart[k] <= 0) delete cart[k]; save(); updateCart(); }
   });
 
-  $('#send').addEventListener('click', () => {
+  // ---------- Checkout: delivery details + WhatsApp message ----------
+  let step = 'cart', map = null, pin = null, pinPos = null;
+  const saved = (() => { try { return JSON.parse(localStorage.getItem('oi-buyer') || '{}'); } catch (e) { return {}; } })();
+  $('#c-name').value = saved.name || '';
+  $('#c-address').value = saved.address || '';
+  $('#c-extra').value = saved.extra || '';
+  if (saved.lat && saved.lng) pinPos = [saved.lat, saved.lng];
+  if (saved.delivery === 'retiro') document.querySelector('input[name=delivery][value=retiro]').checked = true;
+  $('#pickup-note').textContent = 'Te pasamos la dirección exacta para retirar por WhatsApp' + (STORE.place ? ' (zona ' + STORE.place + ').' : '.');
+  const delivery = () => document.querySelector('input[name=delivery]:checked').value;
+
+  function showStep(s) {
+    step = s;
+    const co = s === 'checkout';
+    $('#items').classList.toggle('hidden', co);
+    $('#checkout').classList.toggle('hidden', !co);
+    $('#back-cart').classList.toggle('hidden', !co);
+    $('#drawer-title').textContent = co ? 'Datos de entrega' : 'Mi pedido';
+    $('#send-label').textContent = co ? 'Enviar pedido por WhatsApp' : 'Continuar con la entrega';
+    $('#c-err').textContent = '';
+    if (co) { updateDelivery(); }
+  }
+  function updateDelivery() {
+    const ship = delivery() === 'envio';
+    $('#ship-fields').classList.toggle('hidden', !ship);
+    $('#pickup-note').classList.toggle('hidden', ship);
+    if (ship) initMap();
+  }
+  document.querySelectorAll('input[name=delivery]').forEach((r) => r.addEventListener('change', updateDelivery));
+  $('#back-cart').addEventListener('click', () => showStep('cart'));
+
+  // Map (OpenStreetMap + Leaflet, loaded only when needed)
+  function loadLeaflet() {
+    if (window.L) return Promise.resolve();
+    return new Promise((res, rej) => {
+      const css = document.createElement('link');
+      css.rel = 'stylesheet'; css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(css);
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  function setPin(latlng, fly) {
+    pinPos = [latlng[0], latlng[1]];
+    if (!map) return;
+    if (!pin) {
+      const icon = L.divIcon({ className: '', iconSize: [34, 44], iconAnchor: [17, 42],
+        html: '<svg class="pin" viewBox="0 0 34 44"><path d="M17 0C7.6 0 0 7.6 0 17c0 12.7 17 27 17 27s17-14.3 17-27C34 7.6 26.4 0 17 0z" fill="#ff5fa2"/><circle cx="17" cy="17" r="7" fill="#fff"/></svg>' });
+      pin = L.marker(pinPos, { draggable: true, icon }).addTo(map);
+      pin.on('dragend', () => { const p = pin.getLatLng(); pinPos = [p.lat, p.lng]; });
+    } else pin.setLatLng(pinPos);
+    if (fly) map.setView(pinPos, 17);
+  }
+  function initMap() {
+    if (map) { setTimeout(() => map.invalidateSize(), 50); return; }
+    loadLeaflet().then(() => {
+      $('#map').innerHTML = '';
+      map = L.map('map', { zoomControl: true }).setView(pinPos || [-34.6625, -58.3653], pinPos ? 17 : 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+      if (pinPos) setPin(pinPos);
+      map.on('click', (e) => setPin([e.latlng.lat, e.latlng.lng]));
+      setTimeout(() => map.invalidateSize(), 300);
+    }).catch(() => { $('#map').innerHTML = '<p class="map-loading">No se pudo cargar el mapa. Escribí bien tu dirección y la confirmamos por WhatsApp.</p>'; });
+  }
+  async function findAddress() {
+    const q = $('#c-address').value.trim();
+    if (!q) return toast('Escribí tu dirección primero');
+    $('#c-find').textContent = '…';
+    try {
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&accept-language=es&q=' + encodeURIComponent(q));
+      const j = await r.json();
+      if (j[0]) { setPin([+j[0].lat, +j[0].lon], true); toast('Revisá que el pin esté en tu casa'); }
+      else toast('No la encontramos. Marcala tocando el mapa');
+    } catch (e) { toast('No se pudo buscar. Marcala tocando el mapa'); }
+    $('#c-find').textContent = 'Buscar';
+  }
+  $('#c-find').addEventListener('click', findAddress);
+  $('#c-address').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); findAddress(); } });
+  $('#c-locate').addEventListener('click', () => {
+    if (!navigator.geolocation) return toast('Tu navegador no permite ubicación');
+    navigator.geolocation.getCurrentPosition(
+      (p) => { setPin([p.coords.latitude, p.coords.longitude], true); toast('Listo, revisá que el pin esté bien'); },
+      () => toast('No pudimos obtener tu ubicación'),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
+
+  function buildMessage() {
     let total = 0;
     const lines = cartLines().map(({ q, it }) => {
       const sub = finalPrice(it.p) * q; total += sub;
       return '• ' + q + 'x ' + it.label + ' — ' + money.format(sub);
     });
-    const msg = '¡Hola! Quiero hacer este pedido en Only Imports:\n\n' + lines.join('\n') +
-      '\n\nTotal: ' + money.format(total) + '\nCon transferencia: ' + money.format(transfer(total));
-    window.open(waLink(msg), '_blank');
+    let msg = '¡Hola! Quiero hacer este pedido en Only Imports:\n\n' + lines.join('\n') +
+      '\n\n*Total: ' + money.format(total) + '*\nCon transferencia: ' + money.format(transfer(total)) +
+      '\n\n*Nombre:* ' + $('#c-name').value.trim();
+    if (delivery() === 'envio') {
+      msg += '\n*Entrega:* Envío a domicilio\n*Dirección:* ' + $('#c-address').value.trim() +
+        ($('#c-extra').value.trim() ? '\n*Piso/depto:* ' + $('#c-extra').value.trim() : '') +
+        (pinPos ? '\n*Ubicación en el mapa:* https://www.google.com/maps?q=' + pinPos[0].toFixed(6) + ',' + pinPos[1].toFixed(6) : '');
+    } else {
+      msg += '\n*Entrega:* Retiro en persona';
+    }
+    if ($('#c-notes').value.trim()) msg += '\n*Notas:* ' + $('#c-notes').value.trim();
+    return msg;
+  }
+
+  $('#send').addEventListener('click', () => {
+    if (!cartLines().length) return;
+    if (step === 'cart') return showStep('checkout');
+    const err = (m) => { $('#c-err').textContent = m; toast(m); };
+    if (!$('#c-name').value.trim()) { $('#c-name').focus(); return err('Escribí tu nombre'); }
+    if (delivery() === 'envio') {
+      if (!$('#c-address').value.trim()) { $('#c-address').focus(); return err('Escribí tu dirección'); }
+      if (!pinPos && window.L) return err('Marcá tu casa en el mapa');
+    }
+    try {
+      localStorage.setItem('oi-buyer', JSON.stringify({ name: $('#c-name').value.trim(), address: $('#c-address').value.trim(),
+        extra: $('#c-extra').value.trim(), delivery: delivery(), lat: pinPos && pinPos[0], lng: pinPos && pinPos[1] }));
+    } catch (e) {}
+    const url = waLink(buildMessage());
+    const w = window.open(url, '_blank');
+    if (!w) location.href = url; // some phones block new tabs: open WhatsApp in the same tab
   });
 
   function openPanel(name, open) { document.body.classList.toggle(name + '-open', open); }
   const closeAll = () => { openPanel('cart', false); openPanel('menu', false); };
-  $('#open-cart').addEventListener('click', () => openPanel('cart', true));
+  $('#open-cart').addEventListener('click', () => { showStep('cart'); openPanel('cart', true); });
   $('#close-cart').addEventListener('click', () => openPanel('cart', false));
   $('#open-menu').addEventListener('click', () => openPanel('menu', true));
   $('#close-menu').addEventListener('click', () => openPanel('menu', false));
