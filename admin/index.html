@@ -159,7 +159,7 @@ textarea.in{resize:vertical;min-height:70px}
   <header class="top">
     <div class="wrap">
       <div class="brandmark"><svg><use href="#globe"/></svg>Panel</div>
-      <div><a href="./" target="_blank" rel="noopener">Ver página ↗</a> · <button class="logout" id="logout">Salir</button></div>
+      <div><a href="../" target="_blank" rel="noopener">Ver página ↗</a> · <button class="logout" id="logout">Salir</button></div>
     </div>
     <div class="wrap tabs">
       <button class="tab on" data-tab="products">Productos</button>
@@ -308,7 +308,7 @@ function toast(text, bad) {
 const b64encode = (bytes) => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); };
 const encodeText = (str) => b64encode(new TextEncoder().encode(str));
 const decodeText = (b64) => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, '')), (c) => c.charCodeAt(0)));
-const imgSrc = (img) => !img ? '' : /^(https?:|data:|blob:)/.test(img) ? img : /^img\//.test(img) ? img : (settings.imageBase || '') + img;
+const imgSrc = (img) => !img ? '' : /^(https?:|data:|blob:)/.test(img) ? img : /^img\//.test(img) ? '../' + img : (settings.imageBase || '') + img;
 const stockOf = (p) => (p.variants && p.variants.length) ? p.variants.reduce((a, v) => a + (+v.stock || 0), 0) : (+p.stock || 0);
 const catsOf = (p) => [].concat(p.cat || []);
 const slug = (s) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'foto';
