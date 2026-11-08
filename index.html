@@ -208,6 +208,16 @@ footer a:hover{color:#c2367a}
 .fld input:not([type=radio]){width:100%;border:2px solid #ead9ff;border-radius:12px;padding:11px 12px;font:inherit;font-size:16px;color:var(--ink);outline:none;background:#fff}
 .fld input:focus{border-color:var(--purple)}
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.opts{display:grid;gap:8px}
+.opts label{display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:center;border:2px solid #ead9ff;border-radius:12px;padding:10px 12px;cursor:pointer}
+.opts label:has(input:checked){border-color:var(--purple);background:#f6effa}
+.opts input{grid-row:span 2;accent-color:var(--purple);width:18px;height:18px}
+.opts small{color:var(--muted);font-weight:500}
+.row2{display:grid;grid-template-columns:1fr 1.6fr;gap:8px}
+.zone-msg{margin:10px 0 0;padding:10px 12px;border-radius:12px;font-size:13px;font-weight:600;background:#f6effa}
+.zone-msg.ok{background:#e9f8ef;color:#1f7a45}
+.zone-msg.bad{background:#fff3dc;color:#8a5a00}
+.ship-quote{margin:0 0 14px;padding:10px 12px;border-radius:12px;background:#f6effa;font-size:13px;font-weight:600}
 .seg label{display:flex;align-items:center;gap:8px;border:2px solid #ead9ff;border-radius:12px;padding:10px;font-weight:600;cursor:pointer}
 .seg label:has(input:checked){border-color:var(--purple);background:#f6effa}
 .seg input{accent-color:var(--purple)}
@@ -360,19 +370,29 @@ footer a:hover{color:#c2367a}
   <form class="checkout hidden" id="checkout" novalidate>
     <label class="fld"><span>Tu nombre</span><input id="c-name" autocomplete="name" placeholder="Nombre y apellido" required></label>
     <div class="fld"><span>¿Cómo lo recibís?</span>
-      <div class="seg">
-        <label><input type="radio" name="delivery" value="envio" checked> Envío a domicilio</label>
-        <label><input type="radio" name="delivery" value="retiro"> Retiro en persona</label>
+      <div class="opts">
+        <label><input type="radio" name="delivery" value="moto" checked><b>Envío propio</b><small>CABA, Avellaneda y Lanús · a cotizar</small></label>
+        <label><input type="radio" name="delivery" value="correo"><b>Correo Argentino</b><small>A todo el país</small></label>
+        <label><input type="radio" name="delivery" value="retiro"><b>Retiro en persona</b><small>Sin costo</small></label>
       </div>
     </div>
-    <div id="ship-fields">
+    <div id="moto-fields">
       <label class="fld"><span>Dirección</span>
-        <div class="addr-row"><input id="c-address" autocomplete="street-address" placeholder="Calle, número, localidad"><button type="button" class="mini" id="c-find">Buscar</button></div>
+        <div class="addr-row"><input id="c-address" autocomplete="street-address" placeholder="Calle y número, localidad"><button type="button" class="mini" id="c-find">Buscar</button></div>
       </label>
-      <p class="map-hint">Tocá el mapa o mové el pin hasta tu casa.</p>
-      <div class="map" id="map"><p class="map-loading">Cargando mapa…</p></div>
       <button type="button" class="mini full" id="c-locate">📍 Usar mi ubicación actual</button>
-      <label class="fld"><span>Piso / depto / entre calles (opcional)</span><input id="c-extra" placeholder="Ej: 3° B, timbre 2"></label>
+      <p class="map-hint">Revisá que el pin esté en tu casa. Podés moverlo o tocar el mapa.</p>
+      <div class="map" id="map"><p class="map-loading">Cargando mapa…</p></div>
+      <p class="zone-msg hidden" id="zone-msg"></p>
+      <label class="fld" style="margin-top:12px"><span>Piso / depto / entre calles (opcional)</span><input id="c-extra" placeholder="Ej: 3° B, timbre 2"></label>
+    </div>
+    <div id="correo-fields" class="hidden">
+      <div class="row2">
+        <label class="fld"><span>Código postal</span><input id="c-cp" inputmode="numeric" maxlength="8" placeholder="Ej: 1870"></label>
+        <label class="fld"><span>Localidad y provincia</span><input id="c-city" placeholder="Ej: Rosario, Santa Fe"></label>
+      </div>
+      <label class="fld"><span>Dirección completa</span><input id="c-address2" autocomplete="street-address" placeholder="Calle, número, piso/depto"></label>
+      <p class="ship-quote" id="ship-quote"></p>
     </div>
     <p class="pickup-note hidden" id="pickup-note"></p>
     <label class="fld"><span>Notas (opcional)</span><input id="c-notes" placeholder="Horario, aclaraciones..."></label>
@@ -680,8 +700,9 @@ function start(STORE, PRODUCTS) {
   const activeLines = () => linesFrom(buyNow || cart);
   function updateTotals() {
     const total = activeLines().reduce((a, { q, it }) => a + finalPrice(it.p) * q, 0);
-    $('#total').textContent = money.format(total);
-    $('#total-transfer').textContent = money.format(transfer(total));
+    const ship = typeof shippingCost === 'function' ? shippingCost() : 0;
+    $('#total').textContent = money.format(total + ship);
+    $('#total-transfer').textContent = money.format(transfer(total) + ship);
     $('#send').disabled = !total;
   }
 
@@ -709,15 +730,66 @@ function start(STORE, PRODUCTS) {
   });
 
   // ---------- Checkout: delivery details + WhatsApp message ----------
-  let step = 'cart', map = null, pin = null, pinPos = null;
+  // Delivery: "moto" (own delivery, only CABA / Avellaneda / Lanús), "correo" (Correo Argentino, by postal code), "retiro".
+  const LOCAL_ZONES = ['CABA', 'Avellaneda', 'Lanús'];
+  const AMBA_BOX = '-58.75,-34.45,-58.15,-34.85'; // search only around Buenos Aires
+  let step = 'cart', map = null, pin = null, pinPos = null, zone = null, geoCP = '';
   const saved = (() => { try { return JSON.parse(localStorage.getItem('oi-buyer') || '{}'); } catch (e) { return {}; } })();
-  $('#c-name').value = saved.name || '';
-  $('#c-address').value = saved.address || '';
-  $('#c-extra').value = saved.extra || '';
-  if (saved.lat && saved.lng) pinPos = [saved.lat, saved.lng];
-  if (saved.delivery === 'retiro') document.querySelector('input[name=delivery][value=retiro]').checked = true;
+  ['name', 'address', 'extra', 'cp', 'city', 'address2'].forEach((k) => { if (saved[k]) $('#c-' + k).value = saved[k]; });
+  if (saved.lat && saved.lng) { pinPos = [saved.lat, saved.lng]; zone = saved.zone || null; }
+  if (saved.delivery && document.querySelector('input[name=delivery][value=' + saved.delivery + ']')) document.querySelector('input[name=delivery][value=' + saved.delivery + ']').checked = true;
   $('#pickup-note').textContent = 'Te pasamos la dirección exacta para retirar por WhatsApp' + (STORE.place ? ' (zona ' + STORE.place + ').' : '.');
   const delivery = () => document.querySelector('input[name=delivery]:checked').value;
+  const setDelivery = (v) => { document.querySelector('input[name=delivery][value=' + v + ']').checked = true; updateDelivery(); };
+
+  // Which local zone is an address in? (from OpenStreetMap address details, then postal code)
+  function zoneOf(addr) {
+    const txt = [addr.city, addr.state, addr.county, addr.state_district, addr.municipality, addr.town, addr.suburb].join(' ').toLowerCase();
+    if (/ciudad aut[oó]noma|buenos aires city|^caba| caba/.test(txt) || /autonomous city/.test(txt)) return 'CABA';
+    if (/avellaneda/.test(txt)) return 'Avellaneda';
+    if (/lan[uú]s/.test(txt)) return 'Lanús';
+    const cp = parseInt(String(addr.postcode || '').replace(/\D/g, '').slice(0, 4), 10);
+    if (cp >= 1000 && cp <= 1499) return 'CABA';
+    if ([1869, 1870, 1871, 1872, 1873, 1874, 1875].includes(cp)) return 'Avellaneda';
+    if ([1822, 1824, 1825, 1826].includes(cp)) return 'Lanús';
+    return null;
+  }
+  function shortAddress(addr, display) {
+    const street = [addr.road, addr.house_number].filter(Boolean).join(' ');
+    const place = addr.suburb || addr.city || addr.town || addr.county || '';
+    return street ? street + (place ? ', ' + place : '') : (display || '').split(',').slice(0, 3).join(',');
+  }
+  function showZone() {
+    const m = $('#zone-msg');
+    if (!pinPos) { m.classList.add('hidden'); return; }
+    m.classList.remove('hidden');
+    if (zone) { m.className = 'zone-msg ok'; m.textContent = '✓ Hacemos envío propio a ' + zone + '. El costo te lo pasamos por WhatsApp.'; }
+    else { m.className = 'zone-msg bad'; m.textContent = 'Tu dirección está fuera de CABA, Avellaneda y Lanús: te lo mandamos por Correo Argentino.'; }
+  }
+  async function reverseLookup(lat, lng) {
+    try {
+      const j = await fetch('https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&accept-language=es&lat=' + lat + '&lon=' + lng).then((r) => r.json());
+      const a = j.address || {};
+      zone = zoneOf(a);
+      geoCP = String(a.postcode || '').replace(/\D/g, '').slice(0, 4);
+      return { a, short: shortAddress(a, j.display_name) };
+    } catch (e) { return null; }
+  }
+  // After a location is chosen: fill the address, check the zone, switch to Correo if outside.
+  async function placeChosen(lat, lng, fillAddress) {
+    setPin([lat, lng], true);
+    const r = await reverseLookup(lat, lng);
+    if (r && fillAddress) $('#c-address').value = r.short;
+    showZone();
+    if (r && !zone) {
+      if (geoCP && !$('#c-cp').value) $('#c-cp').value = geoCP;
+      const city = r.a.city || r.a.town || r.a.village || r.a.county || '';
+      if (!$('#c-city').value && city) $('#c-city').value = city + (r.a.state ? ', ' + r.a.state : '');
+      if (!$('#c-address2').value) $('#c-address2').value = $('#c-address').value;
+      toast('Fuera de la zona de envío propio: elegimos Correo Argentino');
+      setDelivery('correo');
+    }
+  }
 
   function showStep(s) {
     step = s;
@@ -728,17 +800,40 @@ function start(STORE, PRODUCTS) {
     $('#drawer-title').textContent = co ? 'Datos de entrega' : 'Mi pedido';
     $('#send-label').textContent = co ? 'Enviar pedido por WhatsApp' : 'Continuar con la entrega';
     $('#c-err').textContent = '';
-    if (co) { updateDelivery(); }
+    if (co) updateDelivery();
     updateTotals();
   }
   function updateDelivery() {
-    const ship = delivery() === 'envio';
-    $('#ship-fields').classList.toggle('hidden', !ship);
-    $('#pickup-note').classList.toggle('hidden', ship);
-    if (ship) initMap();
+    const d = delivery();
+    $('#moto-fields').classList.toggle('hidden', d !== 'moto');
+    $('#correo-fields').classList.toggle('hidden', d !== 'correo');
+    $('#pickup-note').classList.toggle('hidden', d !== 'retiro');
+    $('#c-err').textContent = '';
+    if (d === 'moto') { initMap(); showZone(); }
+    if (d === 'correo') quoteCorreo();
+    updateTotals();
   }
   document.querySelectorAll('input[name=delivery]').forEach((r) => r.addEventListener('change', updateDelivery));
   $('#back-cart').addEventListener('click', () => showStep('cart'));
+
+  // Correo Argentino cost: prices are set in the admin panel (Buenos Aires area / rest of the country).
+  function correoCost() {
+    const cp = parseInt(($('#c-cp').value || '').replace(/\D/g, '').slice(0, 4), 10);
+    if (!(cp >= 1000 && cp <= 9999)) return { ok: false };
+    const prices = STORE.correoPrices || {};
+    const amba = cp < 2000; // 1000-1999: CABA y Gran Buenos Aires
+    const price = +(amba ? prices.amba : prices.interior) || 0;
+    return { ok: true, price, region: amba ? 'CABA / GBA' : 'interior del país' };
+  }
+  function quoteCorreo() {
+    const c = correoCost(), q = $('#ship-quote');
+    q.textContent = !c.ok ? 'Poné tu código postal para calcular el envío.'
+      : c.price ? 'Envío por Correo Argentino a ' + c.region + ': ' + money.format(c.price)
+      : 'Envío por Correo Argentino a ' + c.region + ': te pasamos el costo exacto por WhatsApp.';
+    updateTotals();
+  }
+  $('#c-cp').addEventListener('input', quoteCorreo);
+  const shippingCost = () => (step === 'checkout' && delivery() === 'correo') ? (correoCost().price || 0) : 0;
 
   // Map (OpenStreetMap + Leaflet, loaded only when needed)
   function loadLeaflet() {
@@ -760,7 +855,7 @@ function start(STORE, PRODUCTS) {
       const icon = L.divIcon({ className: '', iconSize: [34, 44], iconAnchor: [17, 42],
         html: '<svg class="pin" viewBox="0 0 34 44"><path d="M17 0C7.6 0 0 7.6 0 17c0 12.7 17 27 17 27s17-14.3 17-27C34 7.6 26.4 0 17 0z" fill="#ff5fa2"/><circle cx="17" cy="17" r="7" fill="#fff"/></svg>' });
       pin = L.marker(pinPos, { draggable: true, icon }).addTo(map);
-      pin.on('dragend', () => { const p = pin.getLatLng(); pinPos = [p.lat, p.lng]; });
+      pin.on('dragend', () => { const p = pin.getLatLng(); placeChosen(p.lat, p.lng, false); });
     } else pin.setLatLng(pinPos);
     if (fly) map.setView(pinPos, 17);
   }
@@ -768,10 +863,10 @@ function start(STORE, PRODUCTS) {
     if (map) { setTimeout(() => map.invalidateSize(), 50); return; }
     loadLeaflet().then(() => {
       $('#map').innerHTML = '';
-      map = L.map('map', { zoomControl: true }).setView(pinPos || [-34.6625, -58.3653], pinPos ? 17 : 12);
+      map = L.map('map').setView(pinPos || [-34.65, -58.4], pinPos ? 17 : 12);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
       if (pinPos) setPin(pinPos);
-      map.on('click', (e) => setPin([e.latlng.lat, e.latlng.lng]));
+      map.on('click', (e) => placeChosen(e.latlng.lat, e.latlng.lng, false));
       setTimeout(() => map.invalidateSize(), 300);
     }).catch(() => { $('#map').innerHTML = '<p class="map-loading">No se pudo cargar el mapa. Escribí bien tu dirección y la confirmamos por WhatsApp.</p>'; });
   }
@@ -780,10 +875,12 @@ function start(STORE, PRODUCTS) {
     if (!q) return toast('Escribí tu dirección primero');
     $('#c-find').textContent = '…';
     try {
-      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&accept-language=es&q=' + encodeURIComponent(q));
-      const j = await r.json();
-      if (j[0]) { setPin([+j[0].lat, +j[0].lon], true); toast('Revisá que el pin esté en tu casa'); }
-      else toast('No la encontramos. Marcala tocando el mapa');
+      const j = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&countrycodes=ar&accept-language=es&bounded=1&viewbox=' + AMBA_BOX + '&q=' + encodeURIComponent(q)).then((r) => r.json());
+      if (j[0]) {
+        setPin([+j[0].lat, +j[0].lon], true);
+        zone = zoneOf(j[0].address || {}); geoCP = String((j[0].address || {}).postcode || '').replace(/\D/g, '').slice(0, 4);
+        showZone(); toast('Revisá que el pin esté en tu casa');
+      } else toast('No la encontramos en CABA, Avellaneda o Lanús. Marcala en el mapa o elegí Correo Argentino');
     } catch (e) { toast('No se pudo buscar. Marcala tocando el mapa'); }
     $('#c-find').textContent = 'Buscar';
   }
@@ -791,10 +888,11 @@ function start(STORE, PRODUCTS) {
   $('#c-address').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); findAddress(); } });
   $('#c-locate').addEventListener('click', () => {
     if (!navigator.geolocation) return toast('Tu navegador no permite ubicación');
+    $('#c-locate').textContent = 'Buscando tu ubicación…';
     navigator.geolocation.getCurrentPosition(
-      (p) => { setPin([p.coords.latitude, p.coords.longitude], true); toast('Listo, revisá que el pin esté bien'); },
-      () => toast('No pudimos obtener tu ubicación'),
-      { enableHighAccuracy: true, timeout: 10000 }
+      async (p) => { initMap(); await loadLeaflet().catch(() => {}); await placeChosen(p.coords.latitude, p.coords.longitude, true); $('#c-locate').textContent = '📍 Usar mi ubicación actual'; },
+      () => { toast('No pudimos obtener tu ubicación. Activá el GPS o escribí la dirección'); $('#c-locate').textContent = '📍 Usar mi ubicación actual'; },
+      { enableHighAccuracy: true, timeout: 15000 }
     );
   });
 
@@ -804,16 +902,22 @@ function start(STORE, PRODUCTS) {
       const sub = finalPrice(it.p) * q; total += sub;
       return '• ' + q + 'x ' + it.label + ' — ' + money.format(sub);
     });
+    const d = delivery(), ship = shippingCost();
     let msg = '¡Hola! Quiero hacer este pedido en Only Imports:\n\n' + lines.join('\n') +
-      '\n\n*Total: ' + money.format(total) + '*\nCon transferencia: ' + money.format(transfer(total)) +
+      '\n\nSubtotal: ' + money.format(total);
+    if (d === 'correo') msg += '\nEnvío Correo Argentino: ' + (ship ? money.format(ship) : 'a cotizar');
+    if (d === 'moto') msg += '\nEnvío propio: a cotizar';
+    msg += '\n*Total: ' + money.format(total + ship) + (ship || d === 'retiro' ? '' : ' + envío') + '*' +
+      '\nCon transferencia: ' + money.format(transfer(total) + ship) +
       '\n\n*Nombre:* ' + $('#c-name').value.trim();
-    if (delivery() === 'envio') {
-      msg += '\n*Entrega:* Envío a domicilio\n*Dirección:* ' + $('#c-address').value.trim() +
+    if (d === 'moto') {
+      msg += '\n*Entrega:* Envío propio (' + (zone || 'zona a confirmar') + ')\n*Dirección:* ' + $('#c-address').value.trim() +
         ($('#c-extra').value.trim() ? '\n*Piso/depto:* ' + $('#c-extra').value.trim() : '') +
-        (pinPos ? '\n*Ubicación en el mapa:* https://www.google.com/maps?q=' + pinPos[0].toFixed(6) + ',' + pinPos[1].toFixed(6) : '');
-    } else {
-      msg += '\n*Entrega:* Retiro en persona';
-    }
+        (pinPos ? '\n*Ubicación:* https://www.google.com/maps?q=' + pinPos[0].toFixed(6) + ',' + pinPos[1].toFixed(6) : '');
+    } else if (d === 'correo') {
+      msg += '\n*Entrega:* Correo Argentino\n*Código postal:* ' + $('#c-cp').value.trim() + '\n*Localidad:* ' + $('#c-city').value.trim() +
+        '\n*Dirección:* ' + $('#c-address2').value.trim();
+    } else msg += '\n*Entrega:* Retiro en persona';
     if ($('#c-notes').value.trim()) msg += '\n*Notas:* ' + $('#c-notes').value.trim();
     return msg;
   }
@@ -821,15 +925,23 @@ function start(STORE, PRODUCTS) {
   $('#send').addEventListener('click', () => {
     if (!activeLines().length) return;
     if (step === 'cart') return showStep('checkout');
-    const err = (m) => { $('#c-err').textContent = m; toast(m); };
-    if (!$('#c-name').value.trim()) { $('#c-name').focus(); return err('Escribí tu nombre'); }
-    if (delivery() === 'envio') {
-      if (!$('#c-address').value.trim()) { $('#c-address').focus(); return err('Escribí tu dirección'); }
-      if (!pinPos && window.L) return err('Marcá tu casa en el mapa');
+    const err = (m, el) => { $('#c-err').textContent = m; toast(m); if (el) $(el).focus(); };
+    const d = delivery();
+    if (!$('#c-name').value.trim()) return err('Escribí tu nombre', '#c-name');
+    if (d === 'moto') {
+      if (!pinPos && !$('#c-address').value.trim()) return err('Escribí tu dirección o usá tu ubicación', '#c-address');
+      if (pinPos && !zone) return err('Esa dirección está fuera de la zona de envío propio. Elegí Correo Argentino');
+      if (!$('#c-address').value.trim()) return err('Completá la dirección', '#c-address');
+    }
+    if (d === 'correo') {
+      if (!correoCost().ok) return err('Poné un código postal válido (4 números)', '#c-cp');
+      if (!$('#c-city').value.trim()) return err('Completá localidad y provincia', '#c-city');
+      if (!$('#c-address2').value.trim()) return err('Completá la dirección', '#c-address2');
     }
     try {
-      localStorage.setItem('oi-buyer', JSON.stringify({ name: $('#c-name').value.trim(), address: $('#c-address').value.trim(),
-        extra: $('#c-extra').value.trim(), delivery: delivery(), lat: pinPos && pinPos[0], lng: pinPos && pinPos[1] }));
+      localStorage.setItem('oi-buyer', JSON.stringify({ name: $('#c-name').value.trim(), address: $('#c-address').value.trim(), extra: $('#c-extra').value.trim(),
+        cp: $('#c-cp').value.trim(), city: $('#c-city').value.trim(), address2: $('#c-address2').value.trim(),
+        delivery: d, lat: pinPos && pinPos[0], lng: pinPos && pinPos[1], zone }));
     } catch (e) {}
     const url = waLink(buildMessage());
     const w = window.open(url, '_blank');
