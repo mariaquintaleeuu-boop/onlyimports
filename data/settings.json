@@ -40,5 +40,6 @@
   "caba20": 7990,
   "caba25": 8990
  },
- "freeShippingFrom": 100000
+ "freeShippingFrom": 100000,
+ "statsUrl": "https://onlyimports-api.mariaquintaleeuu.workers.dev"
 }
