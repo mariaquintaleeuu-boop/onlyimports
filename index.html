@@ -630,12 +630,53 @@ function start(STORE, PRODUCTS) {
     sel.closest('.card').querySelector('.media img').src = imgUrl(v && v.img ? v : p);
   });
 
+  // ---------- Anonymous statistics (visits, clicks, time on page). Admin visits are not counted. ----------
+  const rid = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n || 10)), (b) => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join('');
+  const track = (() => {
+    const url = STORE.statsUrl;
+    let admin = false; try { admin = !!localStorage.getItem('oi-admin-token'); } catch (e) {}
+    if (!url || admin) return () => {};
+    let vid = ''; try { vid = localStorage.getItem('oi-vid') || ''; if (!vid) { vid = rid(); localStorage.setItem('oi-vid', vid); } } catch (e) { vid = rid(); }
+    const sid = rid(); let queue = [], timer = 0;
+    const flush = () => {
+      clearTimeout(timer); if (!queue.length) return;
+      const body = JSON.stringify({ v: vid, s: sid, e: queue.splice(0, 20) });
+      if (!(navigator.sendBeacon && navigator.sendBeacon(url + '/e', body))) fetch(url + '/e', { method: 'POST', body, keepalive: true }).catch(() => {});
+    };
+    const t = (type, pid, n) => { queue.push({ t: type, p: pid || '', n: n || 0 }); clearTimeout(timer); timer = setTimeout(flush, 1200); };
+    t('view');
+    // First real interaction (tap, key or scroll)
+    let engaged = false;
+    const engage = () => { if (engaged) return; engaged = true; t('engage'); };
+    addEventListener('pointerdown', engage, { once: true, passive: true });
+    addEventListener('keydown', engage, { once: true });
+    // Scrolled down to the products
+    let sawProducts = false;
+    addEventListener('scroll', () => {
+      if (scrollY > 80) engage();
+      if (!sawProducts && $('#grid').getBoundingClientRect().top < innerHeight * 0.6 && scrollY > 150) { sawProducts = true; t('products'); }
+    }, { passive: true });
+    // Time on page (only while the page is visible)
+    let since = document.visibilityState === 'visible' ? Date.now() : 0;
+    const stop = () => { if (since) { t('time', '', Math.round((Date.now() - since) / 1000)); since = 0; } flush(); };
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') stop(); else since = Date.now(); });
+    addEventListener('pagehide', stop);
+    return t;
+  })();
+  const sendOrder = (o) => {
+    if (!STORE.statsUrl) return;
+    let admin = false; try { admin = !!localStorage.getItem('oi-admin-token'); } catch (e) {}
+    if (admin) return;
+    const body = JSON.stringify(o);
+    if (!(navigator.sendBeacon && navigator.sendBeacon(STORE.statsUrl + '/order', body))) fetch(STORE.statsUrl + '/order', { method: 'POST', body, keepalive: true }).catch(() => {});
+  };
+
   // ---------- Product detail (photos, description, buy now) ----------
   let pmId = null;
   const photosOf = (p) => [p.img].concat(p.images || []).filter(Boolean).filter((x, i, a) => a.indexOf(x) === i);
   function openProduct(id) {
     const p = byId[id]; if (!p) return;
-    pmId = id;
+    pmId = id; track('open', id);
     const out = stockOf(p) <= 0, fp = finalPrice(p);
     const photos = photosOf(p);
     const firstV = p.variants.findIndex((v) => +v.stock > 0);
@@ -678,9 +719,10 @@ function start(STORE, PRODUCTS) {
   $('#pm-buy').addEventListener('click', () => {
     const key = keyFor(pmId, pmVariant()); if (!key) return;
     const it = lookup(key); if (!it || it.stock < 1) return toast('No hay stock de esta opción');
-    buyNow = {}; buyNow[key] = 1;
+    buyNow = {}; buyNow[key] = 1; track('buy_now', pmId);
     closeProduct(); showStep('checkout'); openPanel('cart', true);
   });
+  $('#pm-ml').addEventListener('click', () => track('ml', pmId));
   $('#pm-ask').addEventListener('click', () => window.open(waLink('¡Hola! ¿Cuándo vuelve a entrar "' + byId[pmId].name + '"?'), '_blank'));
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pmId) closeProduct(); });
 
@@ -706,7 +748,7 @@ function start(STORE, PRODUCTS) {
     const key = keyFor(id, vi); if (!key) return;
     const it = lookup(key);
     if (!it || (cart[key] || 0) + 1 > it.stock) return toast('No hay más stock de esta opción');
-    cart[key] = (cart[key] || 0) + 1; save(); updateCart(); toast('Agregado a tu pedido ✦');
+    cart[key] = (cart[key] || 0) + 1; save(); updateCart(); toast('Agregado a tu pedido ✦'); track('add', id);
   }
 
   let buyNow = null; // { key: qty } when using "Comprar ahora"
@@ -962,6 +1004,7 @@ function start(STORE, PRODUCTS) {
     );
   });
 
+  let orderId = '';
   function buildMessage() {
     let total = 0;
     const lines = activeLines().map(({ q, it }) => {
@@ -969,7 +1012,7 @@ function start(STORE, PRODUCTS) {
       return '• ' + q + 'x ' + it.label + ' — ' + money.format(sub);
     });
     const d = delivery(), ship = shippingCost();
-    let msg = '¡Hola! Quiero hacer este pedido en Only Imports:\n\n' + lines.join('\n') +
+    let msg = '¡Hola! Quiero hacer este pedido en Only Imports (Pedido #' + orderId + '):\n\n' + lines.join('\n') +
       '\n\nSubtotal: ' + money.format(total);
     if (d === 'correo') msg += '\nEnvío Correo Argentino: a cotizar';
     if (d === 'moto') { const mp = motoPrice(); msg += '\nEnvío a domicilio' + (mp ? ' (' + mp.label + '): ' + (isFree() ? 'GRATIS' : money.format(mp.price)) : ': a cotizar'); }
@@ -1016,7 +1059,14 @@ function start(STORE, PRODUCTS) {
         cp: $('#c-cp').value.trim(), city: $('#c-city').value.trim(), address2: $('#c-address2').value.trim(),
         delivery: d, lat: pinPos && pinPos[0], lng: pinPos && pinPos[1], zone }));
     } catch (e) {}
+    orderId = rid(5).toUpperCase();
     const url = waLink(buildMessage());
+    const mp = d === 'moto' ? motoPrice() : null;
+    track('checkout');
+    sendOrder({ id: orderId, name: $('#c-name').value.trim(), source: buyNow ? 'comprar_ahora' : 'carrito',
+      delivery: d === 'retiro' ? 'Retiro en persona' : d === 'correo' ? 'Correo Argentino' : 'Envío ' + (mp ? mp.label : 'a domicilio'),
+      total: subtotal() + shippingCost(),
+      items: activeLines().map(({ q, it }) => ({ pid: it.p.id, v: it.v ? it.v.name : '', label: it.label, q, price: finalPrice(it.p) })) });
     const w = window.open(url, '_blank');
     if (!w) location.href = url; // some phones block new tabs: open WhatsApp in the same tab
   });

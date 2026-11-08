@@ -50,7 +50,7 @@ textarea.in{resize:vertical;min-height:70px}
 .brandmark svg{width:32px;height:32px}
 .top a,.logout{font-size:13px;font-weight:600;color:var(--muted);background:none;border:0;text-decoration:none}
 .tabs{display:flex;gap:6px;padding:0 0 10px}
-.tab{flex:1;border:0;border-radius:12px;padding:10px;font-weight:700;background:var(--soft);color:var(--muted)}
+.tab{flex:1;border:0;border-radius:12px;padding:10px 4px;font-size:13px;font-weight:700;background:var(--soft);color:var(--muted)}
 .tab.on{background:var(--ink);color:#fff}
 
 /* Save bar */
@@ -127,6 +127,41 @@ textarea.in{resize:vertical;min-height:70px}
 .order ul{list-style:none;padding:0;margin:0}
 .order button{border:0;background:#fff;border-radius:8px;width:32px;height:32px;margin-left:4px;font-weight:700}
 
+/* Statistics + orders */
+.hint-top{font-size:13px;color:var(--muted);margin:16px 0 10px}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
+@media(min-width:760px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:#fff;border-radius:16px;padding:14px;box-shadow:0 6px 18px -16px #a66bff}
+.kpi b{display:block;font:700 26px Fredoka,sans-serif;line-height:1.1}
+.kpi span{font-size:12px;font-weight:600;color:var(--muted)}
+.kpi small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.kpi.hl{background:linear-gradient(135deg,#fff0f7,#f4ecff)}
+.bars{display:flex;align-items:flex-end;gap:3px;height:120px;padding-top:8px}
+.bars div{flex:1;min-width:3px;background:linear-gradient(var(--pink),var(--purple));border-radius:4px 4px 0 0;position:relative}
+.bars-x{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
+.ptable{width:100%;border-collapse:collapse;font-size:13px}
+.ptable th{font-size:11px;color:var(--muted);text-align:right;padding:6px 4px;font-weight:600}
+.ptable th:first-child,.ptable td:first-child{text-align:left}
+.ptable td{padding:8px 4px;border-top:1px solid var(--line);text-align:right;vertical-align:middle}
+.ptable td:first-child{display:flex;gap:8px;align-items:center}
+.ptable img{width:36px;height:36px;object-fit:contain;border-radius:8px;background:var(--soft);flex:none}
+.ptable .pn{line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.flag{display:inline-block;margin-top:2px;font-size:10px;font-weight:700;color:#a8610a;background:#fff3dc;border-radius:99px;padding:1px 7px}
+.order-card{background:#fff;border-radius:16px;padding:14px;margin:10px 0;box-shadow:0 6px 18px -16px #a66bff}
+.order-card header{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.order-card h3{font-size:18px}
+.order-card .when{font-size:12px;color:var(--muted)}
+.order-card ul{margin:8px 0;padding-left:18px;font-size:13px;line-height:1.5}
+.order-card .tot{font-weight:700}
+.order-card .src{font-size:11px;font-weight:700;border-radius:99px;padding:2px 8px;background:#f4ecff;color:#6b3fc4}
+.order-card .src.now{background:#ffe9f3;color:#c2367a}
+.order-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.order-btns .btn{padding:10px}
+.btn.ok{background:#e3f6ea;color:var(--ok)}
+.status{font-size:12px;font-weight:700;border-radius:99px;padding:2px 9px}
+.status.vendido{background:#e3f6ea;color:var(--ok)}
+.status.no{background:#fde8e8;color:var(--bad)}
+.status.pendiente{background:#fff3dc;color:#a8610a}
 .toast{position:fixed;left:50%;top:14px;z-index:60;transform:translate(-50%,-120px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:999px;font-weight:600;font-size:14px;transition:transform .3s;white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis}
 .toast.show{transform:translate(-50%,0)}
 .toast.bad{background:var(--bad)}
@@ -168,6 +203,8 @@ textarea.in{resize:vertical;min-height:70px}
     </div>
     <div class="wrap tabs">
       <button class="tab on" data-tab="products">Productos</button>
+      <button class="tab" data-tab="stats">Estadísticas</button>
+      <button class="tab" data-tab="orders">Pedidos</button>
       <button class="tab" data-tab="design">Diseño</button>
     </div>
   </header>
@@ -186,6 +223,29 @@ textarea.in{resize:vertical;min-height:70px}
       <button class="btn grad" id="new-prod">＋ Nuevo producto</button>
     </div>
     <div id="list"></div>
+  </main>
+
+  <!-- Statistics tab -->
+  <main class="wrap hidden" id="tab-stats">
+    <div class="chips" id="period" style="margin:16px 0 4px">
+      <button class="chip" data-days="1">Hoy</button>
+      <button class="chip on" data-days="7">7 días</button>
+      <button class="chip" data-days="30">30 días</button>
+      <button class="chip" data-days="90">90 días</button>
+    </div>
+    <div id="stats"><p class="empty">Cargando…</p></div>
+  </main>
+
+  <!-- Orders tab -->
+  <main class="wrap hidden" id="tab-orders">
+    <p class="hint-top">Cada vez que alguien manda un pedido por WhatsApp aparece acá con su número (#). Cuando sepas si lo pagó, marcá si se vendió o no.</p>
+    <div class="chips" id="order-chips">
+      <button class="chip on" data-o="pendiente">Pendientes</button>
+      <button class="chip" data-o="vendido">Vendidos</button>
+      <button class="chip" data-o="no">No vendidos</button>
+      <button class="chip" data-o="all">Todos</button>
+    </div>
+    <div id="orders"><p class="empty">Cargando…</p></div>
   </main>
 
   <!-- Design tab -->
@@ -223,7 +283,7 @@ textarea.in{resize:vertical;min-height:70px}
     </div>
     <div class="card">
       <h2>Precios de envío a domicilio</h2>
-      <p style="font-size:13px;color:var(--muted);margin:-6px 0 12px">CABA se calcula por distancia desde Avellaneda. Más de 25 km o fuera de estas zonas: Correo Argentino a cotizar.</p>
+      <p style="font-size:13px;color:var(--muted);margin:-6px 0 12px">CABA se calcula por los km en auto desde Eva Duarte de Perón 1343, Sarandí. Más de 25 km o fuera de estas zonas: Correo Argentino a cotizar.</p>
       <label class="f"><span>Envío gratis en compras desde $ (0 = nunca)</span><input class="in" type="number" min="0" inputmode="numeric" data-set="freeShippingFrom"></label>
       <label class="f"><span>Avellaneda $</span><input class="in" type="number" min="0" inputmode="numeric" data-ship="avellaneda"></label>
       <label class="f"><span>Lanús $</span><input class="in" type="number" min="0" inputmode="numeric" data-ship="lanus"></label>
@@ -392,9 +452,10 @@ if (storedToken) login(storedToken);
 // ---------- Tabs ----------
 document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x === b));
-  $('#tab-products').classList.toggle('hidden', b.dataset.tab !== 'products');
-  $('#tab-design').classList.toggle('hidden', b.dataset.tab !== 'design');
+  ['products', 'stats', 'orders', 'design'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', b.dataset.tab !== t));
   if (b.dataset.tab === 'design') renderCatOrder();
+  if (b.dataset.tab === 'stats') loadStats();
+  if (b.dataset.tab === 'orders') loadOrders();
 }));
 
 // ---------- Save ----------
@@ -653,6 +714,107 @@ $('#cat-order').addEventListener('click', (e) => {
   [order[i], order[j]] = [order[j], order[i]];
   settings.categoryOrder = order;
   renderCatOrder(); updateSaveState();
+});
+
+// ---------- Statistics + orders (Cloudflare API, authorized with the same GitHub token) ----------
+let statDays = 7, orderFilter = 'pendiente', orders = [];
+const statsApi = (path, opts) => {
+  if (!settings.statsUrl) return Promise.reject(Object.assign(new Error('no url'), { setup: true }));
+  return fetch(settings.statsUrl + path, Object.assign({}, opts, { headers: Object.assign({ Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, (opts || {}).headers) }))
+    .then((r) => { if (!r.ok) throw Object.assign(new Error('API ' + r.status), { status: r.status }); return r.json(); });
+};
+const apiError = (e) => '<p class="empty">' + (e.setup ? 'Las estadísticas todavía no están conectadas.' : e.status === 401 ? 'La clave no tiene permiso para ver estadísticas.' : 'No se pudieron cargar los datos. Probá de nuevo en un rato.') + '</p>';
+const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '—';
+const mmss = (s) => Math.floor(s / 60) + ' min ' + String(s % 60).padStart(2, '0') + ' s';
+const byPid = (id) => products.find((p) => p.id === id);
+
+async function loadStats() {
+  $('#stats').innerHTML = '<p class="empty">Cargando…</p>';
+  let d;
+  try { d = await statsApi('/stats?days=' + statDays); } catch (e) { $('#stats').innerHTML = apiError(e); return; }
+  const buyNow = d.products.reduce((a, p) => a + p.buy_now, 0), mlClicks = d.products.reduce((a, p) => a + p.ml, 0);
+  // visits per day (fill empty days)
+  const days = [];
+  for (let i = d.days - 1; i >= 0; i--) days.push(new Date(Date.now() - 3 * 3600e3 - i * 86400e3).toISOString().slice(0, 10));
+  const per = Object.fromEntries(d.perDay.map((x) => [x.day, x.visits]));
+  const max = Math.max(1, ...days.map((x) => per[x] || 0));
+  const rows = d.products.map((p) => Object.assign({ prod: byPid(p.pid) }, p)).filter((p) => p.prod)
+    .sort((a, b) => b.opens - a.opens || b.adds - a.adds).slice(0, 40);
+  $('#stats').innerHTML =
+    '<div class="kpis">' +
+      '<div class="kpi hl"><span>Visitas</span><b>' + d.visits + '</b><small>' + d.visitors + ' personas distintas</small></div>' +
+      '<div class="kpi"><span>Interactuaron</span><b>' + pct(d.engaged, d.visits) + '</b><small>' + d.engaged + ' tocaron o deslizaron</small></div>' +
+      '<div class="kpi"><span>Bajaron a ver productos</span><b>' + pct(d.sawProducts, d.visits) + '</b><small>' + d.sawProducts + ' visitas</small></div>' +
+      '<div class="kpi"><span>Tiempo promedio</span><b>' + mmss(d.avgSeconds) + '</b><small>por visita</small></div>' +
+      '<div class="kpi"><span>Clics en "Comprar ahora"</span><b>' + buyNow + '</b><small>no cuenta como venta</small></div>' +
+      '<div class="kpi"><span>Pedidos por WhatsApp</span><b>' + d.orders.total + '</b><small>' + d.orders.pending + ' sin confirmar</small></div>' +
+      '<div class="kpi hl"><span>Ventas confirmadas</span><b>' + d.orders.sold + '</b><small>' + money.format(d.orders.salesTotal) + '</small></div>' +
+      '<div class="kpi"><span>Fueron a Mercado Libre</span><b>' + mlClicks + '</b><small>clics en el botón amarillo</small></div>' +
+    '</div>' +
+    (d.days > 1 ? '<div class="card"><h2>Visitas por día</h2><div class="bars">' +
+      days.map((x) => '<div title="' + x.slice(8) + '/' + x.slice(5, 7) + ': ' + (per[x] || 0) + ' visitas" style="height:' + Math.max(2, (per[x] || 0) / max * 100) + '%"></div>').join('') +
+      '</div><div class="bars-x"><span>' + days[0].slice(8) + '/' + days[0].slice(5, 7) + '</span><span>máx. ' + max + ' por día</span><span>hoy</span></div></div>' : '') +
+    '<div class="card"><h2>Productos más mirados</h2>' +
+      (rows.length ? '<p class="hint" style="font-size:12px;color:var(--muted);margin:-6px 0 8px">Si un producto tiene muchos clics pero ninguna venta, puede ser el precio, las fotos o la descripción.</p>' +
+        '<table class="ptable"><tr><th>Producto</th><th>Clics</th><th>Carrito</th><th>Comprar ahora</th><th>ML</th><th>Vendidos</th></tr>' +
+        rows.map((p) => '<tr><td><img src="' + esc(imgSrc(p.prod.img)) + '" alt=""><div><div class="pn">' + esc(p.prod.name) + '</div>' +
+          (p.opens >= 5 && !p.sold ? '<span class="flag">Muchos clics, sin ventas</span>' : '') + '</div></td>' +
+          '<td><b>' + p.opens + '</b></td><td>' + p.adds + '</td><td>' + p.buy_now + '</td><td>' + p.ml + '</td><td>' + p.sold + '</td></tr>').join('') + '</table>'
+        : '<p class="empty">Todavía no hay clics en productos.</p>') +
+    '</div>' +
+    '<p style="font-size:11px;color:var(--muted);text-align:center">Tus propias visitas desde este dispositivo no se cuentan.</p>';
+}
+$('#period').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-days]'); if (!b) return;
+  statDays = +b.dataset.days;
+  document.querySelectorAll('#period .chip').forEach((x) => x.classList.toggle('on', x === b));
+  loadStats();
+});
+
+async function loadOrders() {
+  $('#orders').innerHTML = '<p class="empty">Cargando…</p>';
+  try { orders = await statsApi('/orders'); } catch (e) { $('#orders').innerHTML = apiError(e); return; }
+  renderOrders();
+}
+function renderOrders() {
+  const list = orders.filter((o) => orderFilter === 'all' || o.status === orderFilter);
+  const label = { pendiente: 'Sin confirmar', vendido: 'Vendido', no: 'No se vendió' };
+  $('#orders').innerHTML = list.length ? list.map((o) =>
+    '<article class="order-card"><header><h3>#' + esc(o.id) + ' · ' + esc(o.name || 'Sin nombre') + '</h3><span class="status ' + o.status + '">' + label[o.status] + '</span></header>' +
+    '<div class="when">' + new Date(o.ts).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) + ' · ' +
+      '<span class="src' + (o.source === 'comprar_ahora' ? ' now' : '') + '">' + (o.source === 'comprar_ahora' ? 'Comprar ahora' : 'Carrito') + '</span> · ' + esc(o.delivery) + '</div>' +
+    '<ul>' + o.items.map((it) => '<li>' + it.q + 'x ' + esc(it.label) + ' — ' + money.format(it.price * it.q) + '</li>').join('') + '</ul>' +
+    '<div class="tot">Total: ' + money.format(o.total) + '</div>' +
+    '<div class="order-btns">' +
+      (o.status !== 'vendido' ? '<button class="btn ok" data-st="vendido" data-id="' + esc(o.id) + '">✓ Se vendió</button>' : '') +
+      (o.status !== 'no' ? '<button class="btn danger" data-st="no" data-id="' + esc(o.id) + '">✗ No se vendió</button>' : '') +
+      (o.status !== 'pendiente' ? '<button class="btn soft" data-st="pendiente" data-id="' + esc(o.id) + '">Volver a pendiente</button>' : '') +
+    '</div></article>').join('')
+    : '<p class="empty">' + (orderFilter === 'pendiente' ? 'No hay pedidos sin confirmar 🎉' : 'No hay pedidos acá.') + '</p>';
+}
+$('#order-chips').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-o]'); if (!b) return;
+  orderFilter = b.dataset.o;
+  document.querySelectorAll('#order-chips .chip').forEach((x) => x.classList.toggle('on', x === b));
+  renderOrders();
+});
+$('#orders').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-st]'); if (!b) return;
+  const o = orders.find((x) => x.id === b.dataset.id), st = b.dataset.st;
+  b.disabled = true;
+  try { await statsApi('/orders/' + o.id, { method: 'POST', body: JSON.stringify({ status: st }) }); }
+  catch (err) { toast('No se pudo guardar. Probá de nuevo.', true); b.disabled = false; return; }
+  o.status = st; renderOrders();
+  toast(st === 'vendido' ? 'Marcado como vendido ✓' : st === 'no' ? 'Marcado como no vendido' : 'Volvió a pendientes');
+  if (st === 'vendido' && confirm('¿Descontar del stock lo que se vendió en el pedido #' + o.id + '?')) {
+    for (const it of o.items) {
+      const p = byPid(it.pid); if (!p) continue;
+      const v = it.v ? p.variants.find((x) => x.name === it.v) : null;
+      if (v) { v.stock = Math.max(0, (+v.stock || 0) - it.q); p.stock = stockOf(p); }
+      else if (!p.variants.length) p.stock = Math.max(0, (+p.stock || 0) - it.q);
+    }
+    renderList(); updateSaveState(); $('#save').click();
+  }
 });
 </script>
 </body>
