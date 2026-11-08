@@ -371,9 +371,9 @@ footer a:hover{color:#c2367a}
     <label class="fld"><span>Tu nombre</span><input id="c-name" autocomplete="name" placeholder="Nombre y apellido" required></label>
     <div class="fld"><span>¿Cómo lo recibís?</span>
       <div class="opts">
-        <label><input type="radio" name="delivery" value="moto" checked><b>Envío propio</b><small>CABA, Avellaneda y Lanús · a cotizar</small></label>
+        <label><input type="radio" name="delivery" value="moto" checked><b>Envío a domicilio</b><small>CABA, Avellaneda y Lanús · a cotizar. Si estás en otro lado, te cotizamos Correo Argentino</small></label>
         <label><input type="radio" name="delivery" value="correo"><b>Correo Argentino</b><small>A todo el país</small></label>
-        <label><input type="radio" name="delivery" value="retiro"><b>Retiro en persona</b><small>Sin costo</small></label>
+        <label><input type="radio" name="delivery" value="retiro"><b>Retiro en persona</b><small>Avellaneda, Zona Sur · sin costo</small></label>
       </div>
     </div>
     <div id="moto-fields">
@@ -738,7 +738,7 @@ function start(STORE, PRODUCTS) {
   ['name', 'address', 'extra', 'cp', 'city', 'address2'].forEach((k) => { if (saved[k]) $('#c-' + k).value = saved[k]; });
   if (saved.lat && saved.lng) { pinPos = [saved.lat, saved.lng]; zone = saved.zone || null; }
   if (saved.delivery && document.querySelector('input[name=delivery][value=' + saved.delivery + ']')) document.querySelector('input[name=delivery][value=' + saved.delivery + ']').checked = true;
-  $('#pickup-note').textContent = 'Te pasamos la dirección exacta para retirar por WhatsApp' + (STORE.place ? ' (zona ' + STORE.place + ').' : '.');
+  $('#pickup-note').textContent = 'Retirás en persona en Avellaneda (Zona Sur), sin costo. Te pasamos la dirección exacta por WhatsApp.';
   const delivery = () => document.querySelector('input[name=delivery]:checked').value;
   const setDelivery = (v) => { document.querySelector('input[name=delivery][value=' + v + ']').checked = true; updateDelivery(); };
 
@@ -781,14 +781,7 @@ function start(STORE, PRODUCTS) {
     const r = await reverseLookup(lat, lng);
     if (r && fillAddress) $('#c-address').value = r.short;
     showZone();
-    if (r && !zone) {
-      if (geoCP && !$('#c-cp').value) $('#c-cp').value = geoCP;
-      const city = r.a.city || r.a.town || r.a.village || r.a.county || '';
-      if (!$('#c-city').value && city) $('#c-city').value = city + (r.a.state ? ', ' + r.a.state : '');
-      if (!$('#c-address2').value) $('#c-address2').value = $('#c-address').value;
-      toast('Fuera de la zona de envío propio: elegimos Correo Argentino');
-      setDelivery('correo');
-    }
+    if (r && !zone) moveToCorreo(r.a, $('#c-address').value);
   }
 
   function showStep(s) {
@@ -870,21 +863,42 @@ function start(STORE, PRODUCTS) {
       setTimeout(() => map.invalidateSize(), 300);
     }).catch(() => { $('#map').innerHTML = '<p class="map-loading">No se pudo cargar el mapa. Escribí bien tu dirección y la confirmamos por WhatsApp.</p>'; });
   }
-  async function findAddress() {
-    const q = $('#c-address').value.trim();
-    if (!q) return toast('Escribí tu dirección primero');
-    $('#c-find').textContent = '…';
-    try {
-      const j = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&countrycodes=ar&accept-language=es&bounded=1&viewbox=' + AMBA_BOX + '&q=' + encodeURIComponent(q)).then((r) => r.json());
-      if (j[0]) {
-        setPin([+j[0].lat, +j[0].lon], true);
-        zone = zoneOf(j[0].address || {}); geoCP = String((j[0].address || {}).postcode || '').replace(/\D/g, '').slice(0, 4);
-        showZone(); toast('Revisá que el pin esté en tu casa');
-      } else toast('No la encontramos en CABA, Avellaneda o Lanús. Marcala en el mapa o elegí Correo Argentino');
-    } catch (e) { toast('No se pudo buscar. Marcala tocando el mapa'); }
-    $('#c-find').textContent = 'Buscar';
+  async function geocode(q, bounded) {
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&countrycodes=ar&accept-language=es&q=' + encodeURIComponent(q) +
+      (bounded ? '&bounded=1&viewbox=' + AMBA_BOX : '');
+    const j = await fetch(url).then((r) => r.json());
+    return j[0] || null;
   }
-  $('#c-find').addEventListener('click', findAddress);
+  // Looks up the typed address: first around Buenos Aires, then the whole country.
+  async function findAddress(silent) {
+    const q = $('#c-address').value.trim();
+    if (!q) { if (!silent) toast('Escribí tu dirección primero'); return false; }
+    $('#c-find').textContent = '…';
+    let found = false;
+    try {
+      const r = (await geocode(q, true)) || (await geocode(q, false));
+      if (r) {
+        found = true;
+        const a = r.address || {};
+        setPin([+r.lat, +r.lon], true);
+        zone = zoneOf(a); geoCP = String(a.postcode || '').replace(/\D/g, '').slice(0, 4);
+        showZone();
+        if (!zone) moveToCorreo(a, q);
+        else if (!silent) toast('Revisá que el pin esté en tu casa');
+      } else if (!silent) toast('No encontramos esa dirección. Marcala en el mapa o elegí Correo Argentino');
+    } catch (e) { if (!silent) toast('No se pudo buscar. Marcala tocando el mapa'); }
+    $('#c-find').textContent = 'Buscar';
+    return found;
+  }
+  function moveToCorreo(a, typedAddress) {
+    if (geoCP && !$('#c-cp').value) $('#c-cp').value = geoCP;
+    const city = a.city || a.town || a.village || a.county || '';
+    if (!$('#c-city').value && city) $('#c-city').value = city + (a.state ? ', ' + a.state : '');
+    if (!$('#c-address2').value) $('#c-address2').value = typedAddress || $('#c-address').value;
+    toast('Estás fuera de CABA, Avellaneda y Lanús: te cotizamos Correo Argentino');
+    setDelivery('correo');
+  }
+  $('#c-find').addEventListener('click', () => findAddress(false));
   $('#c-address').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); findAddress(); } });
   $('#c-locate').addEventListener('click', () => {
     if (!navigator.geolocation) return toast('Tu navegador no permite ubicación');
@@ -922,8 +936,14 @@ function start(STORE, PRODUCTS) {
     return msg;
   }
 
-  $('#send').addEventListener('click', () => {
+  $('#send').addEventListener('click', async () => {
     if (!activeLines().length) return;
+    if (step === 'checkout' && delivery() === 'moto' && !pinPos && $('#c-address').value.trim()) {
+      $('#send-label').textContent = 'Verificando dirección…';
+      await findAddress(true);
+      $('#send-label').textContent = 'Enviar pedido por WhatsApp';
+      if (delivery() !== 'moto') return; // moved to Correo Argentino: let the customer check the details
+    }
     if (step === 'cart') return showStep('checkout');
     const err = (m, el) => { $('#c-err').textContent = m; toast(m); if (el) $(el).focus(); };
     const d = delivery();
