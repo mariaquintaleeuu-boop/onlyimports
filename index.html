@@ -372,7 +372,7 @@ footer a:hover{color:#c2367a}
     <div class="fld"><span>¿Cómo lo recibís?</span>
       <div class="opts">
         <label><input type="radio" name="delivery" value="moto" checked><b>Envío a domicilio</b><small>CABA, Avellaneda y Lanús · a cotizar. Si estás en otro lado, te cotizamos Correo Argentino</small></label>
-        <label><input type="radio" name="delivery" value="correo"><b>Correo Argentino</b><small>A todo el país</small></label>
+        <label><input type="radio" name="delivery" value="correo"><b>Correo Argentino</b><small>Resto del país · a cotizar</small></label>
         <label><input type="radio" name="delivery" value="retiro"><b>Retiro en persona</b><small>Avellaneda, Zona Sur · sin costo</small></label>
       </div>
     </div>
@@ -809,24 +809,13 @@ function start(STORE, PRODUCTS) {
   document.querySelectorAll('input[name=delivery]').forEach((r) => r.addEventListener('change', updateDelivery));
   $('#back-cart').addEventListener('click', () => showStep('cart'));
 
-  // Correo Argentino cost: prices are set in the admin panel (Buenos Aires area / rest of the country).
-  function correoCost() {
-    const cp = parseInt(($('#c-cp').value || '').replace(/\D/g, '').slice(0, 4), 10);
-    if (!(cp >= 1000 && cp <= 9999)) return { ok: false };
-    const prices = STORE.correoPrices || {};
-    const amba = cp < 2000; // 1000-1999: CABA y Gran Buenos Aires
-    const price = +(amba ? prices.amba : prices.interior) || 0;
-    return { ok: true, price, region: amba ? 'CABA / GBA' : 'interior del país' };
-  }
+  // Correo Argentino: always quoted by WhatsApp (no fixed prices).
+  const cpValid = () => $('#c-cp').value.trim().length >= 4;
   function quoteCorreo() {
-    const c = correoCost(), q = $('#ship-quote');
-    q.textContent = !c.ok ? 'Poné tu código postal para calcular el envío.'
-      : c.price ? 'Envío por Correo Argentino a ' + c.region + ': ' + money.format(c.price)
-      : 'Envío por Correo Argentino a ' + c.region + ': te pasamos el costo exacto por WhatsApp.';
-    updateTotals();
+    $('#ship-quote').textContent = 'Envío por Correo Argentino: a cotizar. Te pasamos el costo por WhatsApp' + (cpValid() ? ' (CP ' + $('#c-cp').value.trim() + ').' : '.');
   }
   $('#c-cp').addEventListener('input', quoteCorreo);
-  const shippingCost = () => (step === 'checkout' && delivery() === 'correo') ? (correoCost().price || 0) : 0;
+  const shippingCost = () => 0;
 
   // Map (OpenStreetMap + Leaflet, loaded only when needed)
   function loadLeaflet() {
@@ -919,7 +908,7 @@ function start(STORE, PRODUCTS) {
     const d = delivery(), ship = shippingCost();
     let msg = '¡Hola! Quiero hacer este pedido en Only Imports:\n\n' + lines.join('\n') +
       '\n\nSubtotal: ' + money.format(total);
-    if (d === 'correo') msg += '\nEnvío Correo Argentino: ' + (ship ? money.format(ship) : 'a cotizar');
+    if (d === 'correo') msg += '\nEnvío Correo Argentino: a cotizar';
     if (d === 'moto') msg += '\nEnvío propio: a cotizar';
     msg += '\n*Total: ' + money.format(total + ship) + (ship || d === 'retiro' ? '' : ' + envío') + '*' +
       '\nCon transferencia: ' + money.format(transfer(total) + ship) +
@@ -954,7 +943,7 @@ function start(STORE, PRODUCTS) {
       if (!$('#c-address').value.trim()) return err('Completá la dirección', '#c-address');
     }
     if (d === 'correo') {
-      if (!correoCost().ok) return err('Poné un código postal válido (4 números)', '#c-cp');
+      if (!cpValid()) return err('Poné tu código postal', '#c-cp');
       if (!$('#c-city').value.trim()) return err('Completá localidad y provincia', '#c-city');
       if (!$('#c-address2').value.trim()) return err('Completá la dirección', '#c-address2');
     }
