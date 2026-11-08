@@ -728,10 +728,13 @@ const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '—';
 const mmss = (s) => Math.floor(s / 60) + ' min ' + String(s % 60).padStart(2, '0') + ' s';
 const byPid = (id) => products.find((p) => p.id === id);
 
+loadStats.n = 0;
 async function loadStats() {
   $('#stats').innerHTML = '<p class="empty">Cargando…</p>';
+  const ask = ++loadStats.n;
   let d;
-  try { d = await statsApi('/stats?days=' + statDays); } catch (e) { $('#stats').innerHTML = apiError(e); return; }
+  try { d = await statsApi('/stats?days=' + statDays); } catch (e) { if (ask === loadStats.n) $('#stats').innerHTML = apiError(e); return; }
+  if (ask !== loadStats.n) return; // a newer request is on its way
   const buyNow = d.products.reduce((a, p) => a + p.buy_now, 0), mlClicks = d.products.reduce((a, p) => a + p.ml, 0);
   // visits per day (fill empty days)
   const days = [];

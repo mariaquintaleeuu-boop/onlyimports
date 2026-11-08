@@ -632,6 +632,11 @@ function start(STORE, PRODUCTS) {
 
   // ---------- Anonymous statistics (visits, clicks, time on page). Admin visits are not counted. ----------
   const rid = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n || 10)), (b) => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join('');
+  // fetch+keepalive first: some browsers (e.g. Brave) silently drop sendBeacon
+  const post = (u, body) => {
+    try { fetch(u, { method: 'POST', body, keepalive: true, mode: 'cors' }).catch(() => { try { navigator.sendBeacon(u, body); } catch (e) {} }); }
+    catch (e) { try { navigator.sendBeacon(u, body); } catch (e2) {} }
+  };
   const track = (() => {
     const url = STORE.statsUrl;
     let admin = false; try { admin = !!localStorage.getItem('oi-admin-token'); } catch (e) {}
@@ -641,7 +646,7 @@ function start(STORE, PRODUCTS) {
     const flush = () => {
       clearTimeout(timer); if (!queue.length) return;
       const body = JSON.stringify({ v: vid, s: sid, e: queue.splice(0, 20) });
-      if (!(navigator.sendBeacon && navigator.sendBeacon(url + '/e', body))) fetch(url + '/e', { method: 'POST', body, keepalive: true }).catch(() => {});
+      post(url + '/e', body);
     };
     const t = (type, pid, n) => { queue.push({ t: type, p: pid || '', n: n || 0 }); clearTimeout(timer); timer = setTimeout(flush, 1200); };
     t('view');
@@ -668,7 +673,7 @@ function start(STORE, PRODUCTS) {
     let admin = false; try { admin = !!localStorage.getItem('oi-admin-token'); } catch (e) {}
     if (admin) return;
     const body = JSON.stringify(o);
-    if (!(navigator.sendBeacon && navigator.sendBeacon(STORE.statsUrl + '/order', body))) fetch(STORE.statsUrl + '/order', { method: 'POST', body, keepalive: true }).catch(() => {});
+    post(STORE.statsUrl + '/order', body);
   };
 
   // ---------- Product detail (photos, description, buy now) ----------
