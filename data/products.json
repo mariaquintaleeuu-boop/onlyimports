@@ -7,7 +7,7 @@
    "Cuerpo y bienestar"
   ],
   "type": "Cuidado personal",
-  "price": 29000,
+  "price": 23200,
   "offer": 0,
   "stock": 2,
   "img": "https://http2.mlstatic.com/D_NQ_NP_2X_850659-MLA99898038127_112025-F.webp",
@@ -19,7 +19,8 @@
    "https://http2.mlstatic.com/D_NQ_NP_2X_752024-MLA99414417200_112025-F.webp",
    "https://http2.mlstatic.com/D_NQ_NP_2X_871600-MLA99898156577_112025-F.webp"
   ],
-  "desc": "Pack de 24 mini cepillos descartables de viaje Colgate Wisp, sabor menta. Se usan sin agua ni enjuague: ideales para la cartera, la oficina o los viajes."
+  "desc": "Pack de 24 mini cepillos descartables de viaje Colgate Wisp, sabor menta. Se usan sin agua ni enjuague: ideales para la cartera, la oficina o los viajes.",
+  "mlPrice": 29000
  },
  {
   "id": "p52",
@@ -29,7 +30,7 @@
    "Cuerpo y bienestar"
   ],
   "type": "Cuidado personal",
-  "price": 14900,
+  "price": 11920,
   "offer": 0,
   "stock": 1,
   "img": "https://http2.mlstatic.com/D_NQ_NP_2X_627134-MLA99844932357_112025-F.webp",
@@ -40,7 +41,8 @@
    "https://http2.mlstatic.com/D_NQ_NP_2X_675624-MLU78703543162_092024-F.webp",
    "https://http2.mlstatic.com/D_NQ_NP_2X_919562-MLU78703562736_092024-F.webp"
   ],
-  "desc": "Quitamanchas instantáneo en formato lápiz (10 ml). Saca manchas de comida y bebida al momento, en cualquier lugar."
+  "desc": "Quitamanchas instantáneo en formato lápiz (10 ml). Saca manchas de comida y bebida al momento, en cualquier lugar.",
+  "mlPrice": 14900
  },
  {
   "id": "p53",
@@ -50,7 +52,7 @@
    "Ojos"
   ],
   "type": "Delineadores de ojos",
-  "price": 16000,
+  "price": 12800,
   "offer": 0,
   "stock": 2,
   "img": "https://http2.mlstatic.com/D_NQ_NP_2X_892484-MLA79983589270_102024-F.webp",
@@ -60,7 +62,8 @@
   "images": [
    "https://http2.mlstatic.com/D_NQ_NP_2X_767165-MLA100279339209_122025-F.webp"
   ],
-  "desc": "Lápiz delineador blanco intenso de Wet n Wild. Aplicación suave y precisa, ideal para iluminar la mirada o crear looks distintos."
+  "desc": "Lápiz delineador blanco intenso de Wet n Wild. Aplicación suave y precisa, ideal para iluminar la mirada o crear looks distintos.",
+  "mlPrice": 16000
  },
  {
   "id": "p54",
@@ -70,7 +73,7 @@
    "Rostro"
   ],
   "type": "Rubores",
-  "price": 43000,
+  "price": 34400,
   "offer": 0,
   "stock": 1,
   "img": "https://http2.mlstatic.com/D_NQ_NP_2X_765721-MLU79243967793_092024-F.webp",
@@ -82,7 +85,8 @@
    "https://http2.mlstatic.com/D_NQ_NP_2X_921696-MLA92535754976_092025-F.webp",
    "https://http2.mlstatic.com/D_NQ_NP_2X_728782-MLA92535764720_092025-F.webp"
   ],
-  "desc": "Rubor líquido de larga duración, súper pigmentado y con acabado jugoso. Se difumina fácil y se puede construir. Tono Suave Mauve."
+  "desc": "Rubor líquido de larga duración, súper pigmentado y con acabado jugoso. Se difumina fácil y se puede construir. Tono Suave Mauve.",
+  "mlPrice": 43000
  },
  {
   "id": "p55",
@@ -92,7 +96,7 @@
    "Rostro"
   ],
   "type": "Rubores",
-  "price": 35000,
+  "price": 28000,
   "offer": 0,
   "stock": 2,
   "img": "https://http2.mlstatic.com/D_NQ_NP_2X_910370-MLA111039255225_042026-F.webp",
@@ -103,7 +107,8 @@
    "https://http2.mlstatic.com/D_NQ_NP_2X_807059-MLA111039021269_042026-F.webp",
    "https://http2.mlstatic.com/D_NQ_NP_2X_997508-MLA110121273912_042026-F.webp"
   ],
-  "desc": "Rubor en polvo con acabado natural que dura hasta 10 horas. Hipoalergénico, vegano y libre de crueldad animal."
+  "desc": "Rubor en polvo con acabado natural que dura hasta 10 horas. Hipoalergénico, vegano y libre de crueldad animal.",
+  "mlPrice": 35000
  },
  {
   "id": "p56",
@@ -113,7 +118,7 @@
    "Perfumes"
   ],
   "type": "Perfumes",
-  "price": 249500,
+  "price": 199600,
   "offer": 0,
   "stock": 1,
   "img": "https://http2.mlstatic.com/D_NQ_NP_2X_837844-MLA106597453497_022026-F.webp",
@@ -125,7 +130,8 @@
    "https://http2.mlstatic.com/D_NQ_NP_2X_795692-MLA106597835215_022026-F.webp",
    "https://http2.mlstatic.com/D_NQ_NP_2X_929319-MLA105983067378_022026-F.webp"
   ],
-  "desc": "Set Billie Eilish Eau de Parfum: frasco de 100 ml + mini de 10 ml. Original de EE.UU."
+  "desc": "Set Billie Eilish Eau de Parfum: frasco de 100 ml + mini de 10 ml. Original de EE.UU.",
+  "mlPrice": 249500
  },
  {
   "id": "p57",
@@ -135,7 +141,7 @@
    "Rostro"
   ],
   "type": "Bases",
-  "price": 150000,
+  "price": 120000,
   "offer": 0,
   "stock": 1,
   "img": "https://http2.mlstatic.com/D_NQ_NP_2X_671276-MLA113105136901_062026-F.webp",
@@ -145,7 +151,8 @@
   "images": [
    "https://http2.mlstatic.com/D_NQ_NP_2X_850977-MLA111976275728_062026-F.webp"
   ],
-  "desc": "Base de maquillaje Makeup by Mario, tono 12 O (medio, subtono cálido y oliva). Cubre imperfecciones y unifica el tono con acabado luminoso."
+  "desc": "Base de maquillaje Makeup by Mario, tono 12 O (medio, subtono cálido y oliva). Cubre imperfecciones y unifica el tono con acabado luminoso.",
+  "mlPrice": 150000
  },
  {
   "id": "p58",
@@ -155,7 +162,7 @@
    "Rostro"
   ],
   "type": "Bronceadores",
-  "price": 135000,
+  "price": 108000,
   "offer": 0,
   "stock": 1,
   "img": "https://http2.mlstatic.com/D_NQ_NP_2X_807024-MLA118643103174_102026-F.webp",
@@ -165,7 +172,8 @@
   "images": [
    "https://http2.mlstatic.com/D_NQ_NP_2X_954758-MLA120316597269_102026-F.webp"
   ],
-  "desc": "Bronceador en sérum que aporta calidez al rostro con acabado natural. Textura fluida y fácil de aplicar, para todo tipo de piel."
+  "desc": "Bronceador en sérum que aporta calidez al rostro con acabado natural. Textura fluida y fácil de aplicar, para todo tipo de piel.",
+  "mlPrice": 135000
  },
  {
   "id": "p59",
@@ -175,7 +183,7 @@
    "Rostro"
   ],
   "type": "Contorno",
-  "price": 35000,
+  "price": 28000,
   "offer": 0,
   "stock": 1,
   "img": "https://http2.mlstatic.com/D_NQ_NP_2X_669976-MLU74446971685_022024-F.webp",
@@ -185,7 +193,8 @@
   "images": [
    "https://http2.mlstatic.com/D_NQ_NP_2X_742627-MLU71707187320_092023-F.webp"
   ],
-  "desc": "Contorno Can't Stop Won't Stop de NYX Professional Makeup, para esculpir y definir el rostro con larga duración."
+  "desc": "Contorno Can't Stop Won't Stop de NYX Professional Makeup, para esculpir y definir el rostro con larga duración.",
+  "mlPrice": 35000
  },
  {
   "id": "p60",
@@ -195,7 +204,7 @@
    "Labios"
   ],
   "type": "Bálsamos y tintes",
-  "price": 38000,
+  "price": 30400,
   "offer": 0,
   "stock": 3,
   "img": "https://http2.mlstatic.com/D_NQ_NP_2X_825294-MLA118689744962_102026-F.webp",
@@ -205,7 +214,8 @@
   "images": [
    "https://http2.mlstatic.com/D_NQ_NP_2X_764673-MLA118689361906_102026-F.webp"
   ],
-  "desc": "Tinta de labios e.l.f. con color de larga duración, sin necesidad de retoques. Para el día o la noche."
+  "desc": "Tinta de labios e.l.f. con color de larga duración, sin necesidad de retoques. Para el día o la noche.",
+  "mlPrice": 38000
  },
  {
   "id": "p1",
@@ -634,7 +644,7 @@
   "type": "Máscaras de pestañas",
   "price": 25000,
   "offer": 21000,
-  "stock": 12,
+  "stock": 16,
   "img": "img/p/cc80262f69bcc60d.jpg",
   "mp": "",
   "variants": [
@@ -645,7 +655,7 @@
    },
    {
     "name": "I love Extreme Crazy",
-    "stock": 0,
+    "stock": 3,
     "img": "img/p/fd7836135448e2a4.jpg",
     "ml": "https://www.mercadolibre.com.ar/p/MLA26012847?pdp_filters=seller_id%3A2986264091"
    },
@@ -688,6 +698,12 @@
     "stock": 2,
     "img": "",
     "ml": "https://www.mercadolibre.com.ar/p/MLA22225748?pdp_filters=seller_id%3A2986264091"
+   },
+   {
+    "name": "Definición y Volumen negro",
+    "stock": 1,
+    "img": "",
+    "ml": "https://www.mercadolibre.com.ar/p/MLA23479706?pdp_filters=seller_id%3A2986264091"
    }
   ],
   "images": [
@@ -713,7 +729,7 @@
   "type": "Delineadores de labios",
   "price": 12500,
   "offer": 0,
-  "stock": 6,
+  "stock": 7,
   "img": "img/p/eb81039d6a721405.jpg",
   "mp": "",
   "variants": [
@@ -737,6 +753,12 @@
     "stock": 2,
     "img": "",
     "ml": "https://www.mercadolibre.com.ar/p/MLA39027486?pdp_filters=seller_id%3A2986264091"
+   },
+   {
+    "name": "Mauve Aside",
+    "stock": 1,
+    "img": "",
+    "ml": "https://www.mercadolibre.com.ar/p/MLA47226246?pdp_filters=seller_id%3A2986264091"
    }
   ],
   "images": [
@@ -876,7 +898,7 @@
   "type": "Bálsamos y tintes",
   "price": 28000,
   "offer": 0,
-  "stock": 0,
+  "stock": 1,
   "img": "img/p/29fcc951fa0ca2ac.jpg",
   "mp": "",
   "variants": [
@@ -887,8 +909,9 @@
    },
    {
     "name": "Pink positive",
-    "stock": 0,
-    "img": ""
+    "stock": 1,
+    "img": "",
+    "ml": "https://www.mercadolibre.com.ar/p/MLA52356723?pdp_filters=seller_id%3A2986264091"
    },
    {
     "name": "Plums up",
@@ -1000,7 +1023,8 @@
    {
     "name": "Pink me energy",
     "stock": 1,
-    "img": ""
+    "img": "",
+    "ml": "https://www.mercadolibre.com.ar/labial-elf-glow-reviver-slipstick/up/MLAU5730620444"
    }
   ],
   "images": [
@@ -1188,7 +1212,7 @@
   "type": "Rubores",
   "price": 32000,
   "offer": 0,
-  "stock": 1,
+  "stock": 2,
   "img": "img/p/80d5be9da1324550.jpg",
   "mp": "",
   "variants": [],

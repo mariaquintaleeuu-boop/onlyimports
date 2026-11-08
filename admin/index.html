@@ -578,7 +578,7 @@ $('#e-ok').addEventListener('click', () => {
   const p = {
     id: editing.id, name, brand: $('#e-brand').value.trim(), cat: catsOf(editing), type: $('#e-type').value.trim(),
     price, offer, stock: hasVar ? variants.reduce((a, v) => a + v.stock, 0) : +editing.stock || 0,
-    img: editing.img || '', images: editing.images || [], desc: $('#e-desc').value.trim(), mp: $('#e-mp').value.trim(), ml: $('#e-ml').value.trim(), variants
+    img: editing.img || '', images: editing.images || [], desc: $('#e-desc').value.trim(), mp: $('#e-mp').value.trim(), ml: $('#e-ml').value.trim(), variants, ...(editing.mlPrice ? { mlPrice: editing.mlPrice } : {})
   };
   const i = products.findIndex((x) => x.id === p.id);
   if (i >= 0) products[i] = p; else products.unshift(p);

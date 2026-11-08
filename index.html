@@ -191,10 +191,13 @@ footer a:hover{color:#c2367a}
 .pm-info h2{margin:0 0 10px;font:600 24px/1.2 Fredoka,sans-serif}
 .pm-info .brand,.pm-info .price,.pm-info .transfer{text-align:left;margin-left:0}
 .pm-info .price{font-size:24px}
-.pm-ml{display:inline-flex;align-items:center;gap:7px;background:#ffe600;color:#2d3277;font-weight:700;font-size:12.5px;padding:5px 12px 5px 5px;border-radius:999px;text-decoration:none;margin:0 0 10px;box-shadow:0 2px 0 #e3cb00;transition:transform .15s,box-shadow .15s}
-.pm-ml i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#2d3277;color:#ffe600}
-.pm-ml b{font-size:11px;opacity:.7}
-.pm-ml:hover{transform:translateY(-1px);box-shadow:0 3px 0 #e3cb00}
+.mlp{display:block;font-size:12px;color:#2d3277;margin:2px 0 0;text-align:center}
+.mlp s{opacity:.65}
+.pm-info .mlp{text-align:left;margin-top:4px}
+.pm-ml{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;box-sizing:border-box;background:#ffe600;color:#2d3277;font-weight:700;font-size:15px;padding:11px 14px;border-radius:999px;text-decoration:none;margin:-4px 0 14px;box-shadow:0 3px 0 #e3cb00;transition:transform .15s,box-shadow .15s}
+.pm-ml i{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#2d3277;color:#ffe600}
+.pm-ml b{font-size:12px;opacity:.7}
+.pm-ml:hover{transform:translateY(-1px);box-shadow:0 4px 0 #e3cb00}
 .pm-ml.hidden{display:none}
 .pm-var span{display:block;font-size:13px;font-weight:600;margin:6px 0}
 .pm-actions{display:grid;gap:10px;margin:14px 0}
@@ -416,7 +419,6 @@ footer a:hover{color:#c2367a}
     <button class="close pm-x" id="pm-close" aria-label="Cerrar">×</button>
     <div class="pm-media"><div class="pm-gallery" id="pm-gallery"></div><div class="pm-thumbs" id="pm-thumbs"></div></div>
     <div class="pm-info">
-      <a class="pm-ml hidden" id="pm-ml" href="#" target="_blank" rel="noopener"><i aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></i>Ver en Mercado Libre<b aria-hidden="true">↗</b></a>
       <p class="brand" id="pm-brand"></p>
       <h2 id="pm-name"></h2>
       <p class="price" id="pm-price"></p>
@@ -426,6 +428,7 @@ footer a:hover{color:#c2367a}
         <button class="add" id="pm-add">Agregar al carrito</button>
         <button class="btn" id="pm-buy">Comprar ahora</button>
       </div>
+      <a class="pm-ml hidden" id="pm-ml" href="#" target="_blank" rel="noopener"><i aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></i>Comprar en Mercado Libre<b aria-hidden="true">↗</b></a>
       <div class="pm-actions hidden" id="pm-out"><button class="add" id="pm-ask">Sin stock · Consultar ingreso</button></div>
       <p class="pm-desc" id="pm-desc"></p>
     </div>
@@ -447,6 +450,7 @@ function start(STORE, PRODUCTS) {
   const money = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
   const $ = (s) => document.querySelector(s);
   const imgUrl = (p) => !p.img ? '' : /^(https?:|img\/|data:)/.test(p.img) ? p.img : STORE.imageBase + p.img;
+  const mlOff = (p) => p.mlPrice > finalPrice(p) ? Math.round((1 - finalPrice(p) / p.mlPrice) * 100) : 0;
   const finalPrice = (p) => p.offer > 0 && p.offer < p.price ? p.offer : p.price;
   const transfer = (n) => Math.round(n * (1 - (STORE.transferDiscount || 0) / 100));
   const waLink = (text) => 'https://wa.me/' + STORE.whatsapp + (text ? '?text=' + encodeURIComponent(text) : '');
@@ -551,13 +555,14 @@ function start(STORE, PRODUCTS) {
     const fp = finalPrice(p);
     const off = fp < p.price ? Math.round((1 - fp / p.price) * 100) : 0;
     return '<article class="card' + (out ? ' out' : '') + '">' +
-      (off ? '<span class="tag">' + off + '% OFF</span>' : '') +
+      (off ? '<span class="tag">' + off + '% OFF</span>' : mlOff(p) ? '<span class="tag">' + mlOff(p) + '% menos que en ML</span>' : '') +
       (out ? '<span class="out-label">SIN STOCK</span>' : '') +
       '<div class="media" data-open="' + esc(p.id) + '"><img src="' + imgUrl(p) + '" alt="' + esc(p.name) + '" loading="lazy" decoding="async"></div>' +
       '<p class="brand">' + (p.brand && p.brand !== OTHER_BRAND ? esc(p.brand) : '&nbsp;') + '</p>' +
       '<h3 data-open="' + esc(p.id) + '">' + esc(p.name) + '</h3>' +
       '<p class="price">' + (off ? '<s>' + money.format(p.price) + '</s>' : '') + money.format(fp) + '</p>' +
       '<p class="transfer"><b>' + money.format(transfer(fp)) + '</b> con transferencia</p>' +
+      (mlOff(p) ? '<p class="mlp">En Mercado Libre <s>' + money.format(p.mlPrice) + '</s></p>' : '') +
       (!out && p.variants.length ? '<select class="variant" data-vfor="' + esc(p.id) + '" aria-label="Elegí una opción">' +
         p.variants.map((v, i) => '<option value="' + i + '"' + (+v.stock > 0 ? '' : ' disabled') + (i === firstV ? ' selected' : '') + '>' +
           esc(v.name) + (+v.stock > 0 ? '' : ' (sin stock)') + '</option>').join('') + '</select>' : '') +
@@ -639,7 +644,8 @@ function start(STORE, PRODUCTS) {
     $('#pm-brand').textContent = p.brand && p.brand !== OTHER_BRAND ? p.brand : '';
     $('#pm-name').textContent = p.name;
     $('#pm-price').innerHTML = (fp < p.price ? '<s>' + money.format(p.price) + '</s>' : '') + money.format(fp);
-    $('#pm-transfer').innerHTML = '<b>' + money.format(transfer(fp)) + '</b> con transferencia';
+    $('#pm-transfer').innerHTML = '<b>' + money.format(transfer(fp)) + '</b> con transferencia' +
+      (mlOff(p) ? '<span class="mlp">' + mlOff(p) + '% más barato que en Mercado Libre (<s>' + money.format(p.mlPrice) + '</s>)</span>' : '');
     setMl(p, p.variants[firstV]);
     $('#pm-desc').textContent = p.desc || '';
     $('#pm-desc').classList.toggle('hidden', !p.desc);
