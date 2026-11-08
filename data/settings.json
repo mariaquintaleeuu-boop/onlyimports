@@ -30,5 +30,15 @@
   "Cuerpo y bienestar",
   "Brochas y accesorios"
  ],
- "imageBase": "https://d22fxaf9t8d39k.cloudfront.net/"
+ "imageBase": "https://d22fxaf9t8d39k.cloudfront.net/",
+ "shipping": {
+  "avellaneda": 4990,
+  "lanus": 5990,
+  "caba15": 6990,
+  "caba25": 8990,
+  "origin": [
+   -34.6625,
+   -58.3653
+  ]
+ }
 }

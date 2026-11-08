@@ -220,6 +220,14 @@ textarea.in{resize:vertical;min-height:70px}
       <label class="f"><span>TikTok (link)</span><input class="in" data-set="tiktok"></label>
       <label class="f"><span>Descuento por transferencia (%)</span><input class="in" data-set="transferDiscount" type="number" min="0" max="90" inputmode="numeric"></label>
     </div>
+    <div class="card">
+      <h2>Precios de envío a domicilio</h2>
+      <p style="font-size:13px;color:var(--muted);margin:-6px 0 12px">CABA se calcula por distancia desde Avellaneda. Más de 25 km o fuera de estas zonas: Correo Argentino a cotizar.</p>
+      <label class="f"><span>Avellaneda $</span><input class="in" type="number" min="0" inputmode="numeric" data-ship="avellaneda"></label>
+      <label class="f"><span>Lanús $</span><input class="in" type="number" min="0" inputmode="numeric" data-ship="lanus"></label>
+      <label class="f"><span>CABA hasta 15 km $</span><input class="in" type="number" min="0" inputmode="numeric" data-ship="caba15"></label>
+      <label class="f"><span>CABA de 15 a 25 km $</span><input class="in" type="number" min="0" inputmode="numeric" data-ship="caba25"></label>
+    </div>
     <div class="card order">
       <h2>Orden de las categorías</h2>
       <ul id="cat-order"></ul>
@@ -611,8 +619,8 @@ function fillDesign() {
   settings.colors = settings.colors || { pink: '#ff5fa2', purple: '#a66bff', peach: '#ffb347' };
   document.querySelectorAll('[data-color]').forEach((i) => { i.value = settings.colors[i.dataset.color]; });
   $('#anim').checked = settings.animatedBackground !== false;
-  settings.correoPrices = settings.correoPrices || { amba: 0, interior: 0 };
-  document.querySelectorAll('[data-ship]').forEach((i) => { i.value = settings.correoPrices[i.dataset.ship] || 0; });
+  settings.shipping = Object.assign({ avellaneda: 4990, lanus: 5990, caba15: 6990, caba25: 8990 }, settings.shipping || {});
+  document.querySelectorAll('[data-ship]').forEach((i) => { i.value = settings.shipping[i.dataset.ship]; });
   paintPreview();
 }
 function paintPreview() {
@@ -625,7 +633,7 @@ $('#tab-design').addEventListener('input', (e) => {
   if (t.dataset.badge) { settings.badges = settings.badges || ['', '', '']; settings.badges[+t.dataset.badge] = t.value; }
   if (t.dataset.color) { settings.colors[t.dataset.color] = t.value; paintPreview(); }
   if (t.id === 'anim') settings.animatedBackground = t.checked;
-  if (t.dataset.ship) settings.correoPrices[t.dataset.ship] = Math.max(0, Math.round(+t.value || 0));
+  if (t.dataset.ship) settings.shipping[t.dataset.ship] = Math.max(0, Math.round(+t.value || 0));
   updateSaveState();
 });
 $('#anim').addEventListener('change', (e) => { settings.animatedBackground = e.target.checked; updateSaveState(); });

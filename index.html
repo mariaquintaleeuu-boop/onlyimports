@@ -371,7 +371,7 @@ footer a:hover{color:#c2367a}
     <label class="fld"><span>Tu nombre</span><input id="c-name" autocomplete="name" placeholder="Nombre y apellido" required></label>
     <div class="fld"><span>¿Cómo lo recibís?</span>
       <div class="opts">
-        <label><input type="radio" name="delivery" value="moto" checked><b>Envío a domicilio</b><small>CABA, Avellaneda y Lanús · a cotizar. Si estás en otro lado, te cotizamos Correo Argentino</small></label>
+        <label><input type="radio" name="delivery" value="moto" checked><b>Envío a domicilio</b><small id="moto-prices">Avellaneda, Lanús y CABA</small></label>
         <label><input type="radio" name="delivery" value="correo"><b>Correo Argentino</b><small>Resto del país · a cotizar</small></label>
         <label><input type="radio" name="delivery" value="retiro"><b>Retiro en persona</b><small>Avellaneda, Zona Sur · sin costo</small></label>
       </div>
@@ -759,12 +759,33 @@ function start(STORE, PRODUCTS) {
     const place = addr.suburb || addr.city || addr.town || addr.county || '';
     return street ? street + (place ? ', ' + place : '') : (display || '').split(',').slice(0, 3).join(',');
   }
+  // Own delivery prices (editable in the admin panel). CABA depends on the distance from the store.
+  const SHIP = Object.assign({ avellaneda: 4990, lanus: 5990, caba15: 6990, caba25: 8990, origin: [-34.6625, -58.3653] }, STORE.shipping || {});
+  function distanceKm(a, b) {
+    const R = 6371, rad = (x) => x * Math.PI / 180;
+    const dLat = rad(b[0] - a[0]), dLng = rad(b[1] - a[1]);
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a[0])) * Math.cos(rad(b[0])) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
+  // Returns { price, label } for own delivery, or null when it has to go by Correo Argentino.
+  function motoPrice() {
+    if (!zone || !pinPos) return null;
+    if (zone === 'Avellaneda') return { price: +SHIP.avellaneda, label: 'Avellaneda' };
+    if (zone === 'Lanús') return { price: +SHIP.lanus, label: 'Lanús' };
+    const km = distanceKm(SHIP.origin, pinPos);
+    if (km <= 15) return { price: +SHIP.caba15, label: 'CABA (hasta 15 km)' };
+    if (km <= 25) return { price: +SHIP.caba25, label: 'CABA (15 a 25 km)' };
+    return null;
+  }
+  $('#moto-prices').textContent = 'Avellaneda ' + money.format(SHIP.avellaneda) + ' · Lanús ' + money.format(SHIP.lanus) + ' · CABA desde ' + money.format(SHIP.caba15);
   function showZone() {
     const m = $('#zone-msg');
     if (!pinPos) { m.classList.add('hidden'); return; }
     m.classList.remove('hidden');
-    if (zone) { m.className = 'zone-msg ok'; m.textContent = '✓ Hacemos envío propio a ' + zone + '. El costo te lo pasamos por WhatsApp.'; }
-    else { m.className = 'zone-msg bad'; m.textContent = 'Tu dirección está fuera de CABA, Avellaneda y Lanús: te lo mandamos por Correo Argentino.'; }
+    const mp = motoPrice();
+    if (mp) { m.className = 'zone-msg ok'; m.textContent = '✓ Envío a ' + mp.label + ': ' + money.format(mp.price); }
+    else { m.className = 'zone-msg bad'; m.textContent = 'Tu dirección está fuera de nuestra zona de envío: te lo mandamos por Correo Argentino (a cotizar).'; }
+    updateTotals();
   }
   async function reverseLookup(lat, lng) {
     try {
@@ -781,7 +802,7 @@ function start(STORE, PRODUCTS) {
     const r = await reverseLookup(lat, lng);
     if (r && fillAddress) $('#c-address').value = r.short;
     showZone();
-    if (r && !zone) moveToCorreo(r.a, $('#c-address').value);
+    if (r && !motoPrice()) moveToCorreo(r.a, $('#c-address').value);
   }
 
   function showStep(s) {
@@ -815,7 +836,7 @@ function start(STORE, PRODUCTS) {
     $('#ship-quote').textContent = 'Envío por Correo Argentino: a cotizar. Te pasamos el costo por WhatsApp' + (cpValid() ? ' (CP ' + $('#c-cp').value.trim() + ').' : '.');
   }
   $('#c-cp').addEventListener('input', quoteCorreo);
-  const shippingCost = () => 0;
+  const shippingCost = () => { if (step !== 'checkout' || delivery() !== 'moto') return 0; const mp = motoPrice(); return mp ? mp.price : 0; };
 
   // Map (OpenStreetMap + Leaflet, loaded only when needed)
   function loadLeaflet() {
@@ -872,7 +893,7 @@ function start(STORE, PRODUCTS) {
         setPin([+r.lat, +r.lon], true);
         zone = zoneOf(a); geoCP = String(a.postcode || '').replace(/\D/g, '').slice(0, 4);
         showZone();
-        if (!zone) moveToCorreo(a, q);
+        if (!motoPrice()) moveToCorreo(a, q);
         else if (!silent) toast('Revisá que el pin esté en tu casa');
       } else if (!silent) toast('No encontramos esa dirección. Marcala en el mapa o elegí Correo Argentino');
     } catch (e) { if (!silent) toast('No se pudo buscar. Marcala tocando el mapa'); }
@@ -909,12 +930,12 @@ function start(STORE, PRODUCTS) {
     let msg = '¡Hola! Quiero hacer este pedido en Only Imports:\n\n' + lines.join('\n') +
       '\n\nSubtotal: ' + money.format(total);
     if (d === 'correo') msg += '\nEnvío Correo Argentino: a cotizar';
-    if (d === 'moto') msg += '\nEnvío propio: a cotizar';
+    if (d === 'moto') { const mp = motoPrice(); msg += '\nEnvío a domicilio' + (mp ? ' (' + mp.label + '): ' + money.format(mp.price) : ': a cotizar'); }
     msg += '\n*Total: ' + money.format(total + ship) + (ship || d === 'retiro' ? '' : ' + envío') + '*' +
       '\nCon transferencia: ' + money.format(transfer(total) + ship) +
       '\n\n*Nombre:* ' + $('#c-name').value.trim();
     if (d === 'moto') {
-      msg += '\n*Entrega:* Envío propio (' + (zone || 'zona a confirmar') + ')\n*Dirección:* ' + $('#c-address').value.trim() +
+      msg += '\n*Entrega:* Envío a domicilio (' + (motoPrice() ? motoPrice().label : 'zona a confirmar') + ')\n*Dirección:* ' + $('#c-address').value.trim() +
         ($('#c-extra').value.trim() ? '\n*Piso/depto:* ' + $('#c-extra').value.trim() : '') +
         (pinPos ? '\n*Ubicación:* https://www.google.com/maps?q=' + pinPos[0].toFixed(6) + ',' + pinPos[1].toFixed(6) : '');
     } else if (d === 'correo') {
@@ -939,7 +960,7 @@ function start(STORE, PRODUCTS) {
     if (!$('#c-name').value.trim()) return err('Escribí tu nombre', '#c-name');
     if (d === 'moto') {
       if (!pinPos && !$('#c-address').value.trim()) return err('Escribí tu dirección o usá tu ubicación', '#c-address');
-      if (pinPos && !zone) return err('Esa dirección está fuera de la zona de envío propio. Elegí Correo Argentino');
+      if (pinPos && !motoPrice()) return err('Esa dirección está fuera de la zona de envío. Elegí Correo Argentino');
       if (!$('#c-address').value.trim()) return err('Completá la dirección', '#c-address');
     }
     if (d === 'correo') {
