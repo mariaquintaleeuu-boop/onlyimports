@@ -1,0 +1,755 @@
+[
+ {
+  "id": "p1",
+  "name": "Pure Nude highlighter Essence",
+  "brand": "Essence",
+  "cat": [
+   "Rostro"
+  ],
+  "type": "Iluminadores",
+  "price": 25000,
+  "offer": 0,
+  "stock": 2,
+  "img": "516d6b99504c1d7c4ae32ce11e23558e1de6e0d4d6dd85412a300266a60c1064454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p2",
+  "name": "Lash Princess Mascara Primer Essence",
+  "brand": "Essence",
+  "cat": [
+   "Ojos"
+  ],
+  "type": "Máscaras de pestañas",
+  "price": 25000,
+  "offer": 21000,
+  "stock": 2,
+  "img": "3f61cbd1c7bed968c5bc43de5a94868031d4df6a816f151936ef7b1b804d1de5454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p3",
+  "name": "Mascara Big Mood Mega volumen y lift",
+  "brand": "e.l.f.",
+  "cat": [
+   "Ojos"
+  ],
+  "type": "Máscaras de pestañas",
+  "price": 30000,
+  "offer": 0,
+  "stock": 1,
+  "img": "e05addd8357842688b4bf5ad90f97a32436546b30408a02b7a5221121df6804e454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p4",
+  "name": "Paleta de Sombras Color Icon Wet n Wild",
+  "brand": "Wet n Wild",
+  "cat": [
+   "Ojos"
+  ],
+  "type": "Sombras y paletas",
+  "price": 16000,
+  "offer": 0,
+  "stock": 2,
+  "img": "04ded7202258b853f1e48107879e169585b486dba4b8969415c776a56ffcf6a2454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p5",
+  "name": "Serum Coreano Beauty Of Joseon Green Tea mas panthenol 30ml",
+  "brand": "Beauty of Joseon",
+  "cat": [
+   "Skincare"
+  ],
+  "type": "Sérums",
+  "price": 42000,
+  "offer": 0,
+  "stock": 1,
+  "img": "1511133000e122c9ee74af4e2fbf67390d682f7b3e4af1c38c07de00e5e167aa454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p6",
+  "name": "Purito Wonder releaf centella serum 60ml suero facial calmante he hidratante",
+  "brand": "Purito",
+  "cat": [
+   "Skincare"
+  ],
+  "type": "Sérums",
+  "price": 49000,
+  "offer": 0,
+  "stock": 2,
+  "img": "f8753d145d1c3366bbfca6ccb6cad05b393b8c0a991a7c4224cc9359f91942d3454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p7",
+  "name": "Purito protector solar COREANO sunday adventure sunscreen Broad Spectrum spf 50",
+  "brand": "Purito",
+  "cat": [
+   "Skincare"
+  ],
+  "type": "Protector solar",
+  "price": 42000,
+  "offer": 0,
+  "stock": 2,
+  "img": "a26515c2ae9470dac1e9bc2be7463f6edf980e9cf5be295ebcb273f3270594f8454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p8",
+  "name": "Brocha Espatula coreana para base PREMIUM",
+  "brand": "Otras marcas",
+  "cat": [
+   "Brochas y accesorios"
+  ],
+  "type": "Brochas y esponjas",
+  "price": 17000,
+  "offer": 0,
+  "stock": 2,
+  "img": "3573dc6c91b4a95e3e0376f4baccd651109ee7bcfd49cc4edbf3957a42f6bfc3454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p9",
+  "name": "Centella Ampoule Serum Facial hidratante 55ml DiayNoche",
+  "brand": "Otras marcas",
+  "cat": [
+   "Skincare"
+  ],
+  "type": "Sérums",
+  "price": 39000,
+  "offer": 0,
+  "stock": 1,
+  "img": "7bff1f0f913b6396a0e300c31a77838e3ab7345b72b70cb1b83b3eb4a0e31b14454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p10",
+  "name": "Reddle Shot 100 Serum Booster Microagujas cica 50ml",
+  "brand": "Otras marcas",
+  "cat": [
+   "Skincare"
+  ],
+  "type": "Sérums",
+  "price": 65000,
+  "offer": 0,
+  "stock": 0,
+  "img": "fc18fe6c01426fad0369b24a0a19a4f36b41b62adb9a5a93f815512aff2bc187454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p11",
+  "name": "Suede Matte Lipstick Lightweight vengan Lipstick NYX",
+  "brand": "NYX",
+  "cat": [
+   "Labios"
+  ],
+  "type": "Labiales y gloss",
+  "price": 45000,
+  "offer": 0,
+  "stock": 2,
+  "img": "21b8542a24f6022e5f395c40d50b7014633f32eb564be0d1ae8c752a35bf7b56454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p12",
+  "name": "NYX Profesional Cant Stop wont stop 24hrs",
+  "brand": "NYX",
+  "cat": [
+   "Rostro"
+  ],
+  "type": "Correctores",
+  "price": 39000,
+  "offer": 0,
+  "stock": 3,
+  "img": "f0d75d1d0e4f7aefbedaaeb7da13d12d3bc62e4fecc2a5a2a186451e1a868b44454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p13",
+  "name": "Essential Brow y Liner Brush Duo",
+  "brand": "Otras marcas",
+  "cat": [
+   "Brochas y accesorios"
+  ],
+  "type": "Brochas y esponjas",
+  "price": 10000,
+  "offer": 0,
+  "stock": 2,
+  "img": "35fe03f28785cf11f7fec7f33f471df88d9230c6200a91c12346609af6a90788454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p14",
+  "name": "Disney villains Fiery Femmes Eyes y Face Palette",
+  "brand": "Otras marcas",
+  "cat": [
+   "Ojos"
+  ],
+  "type": "Sombras y paletas",
+  "price": 48000,
+  "offer": 39000,
+  "stock": 2,
+  "img": "75dd1a39d1b277b86a5925fb5eb5c82f134dc83b4933fb03feabafae004aa5a8454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p15",
+  "name": "Long Lasting eye pencil essence",
+  "brand": "Essence",
+  "cat": [
+   "Ojos"
+  ],
+  "type": "Delineadores de ojos",
+  "price": 19000,
+  "offer": 0,
+  "stock": 1,
+  "img": "4b7b94d8d932a737b5b2e98f0c01041446a12f14ea7e497f0859231d6b59d89c454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p16",
+  "name": "24Ever ink liner Esscence",
+  "brand": "Essence",
+  "cat": [
+   "Ojos"
+  ],
+  "type": "Delineadores de ojos",
+  "price": 19000,
+  "offer": 0,
+  "stock": 0,
+  "img": "97bafd224a828de0a07c998c2de489dac151f517e383fb1c07b6a3ed3c346f23454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p17",
+  "name": "Juicy Melon tinted lip y cheek balm",
+  "brand": "Essence",
+  "cat": [
+   "Labios"
+  ],
+  "type": "Bálsamos y tintes",
+  "price": 22000,
+  "offer": 0,
+  "stock": 2,
+  "img": "414f92ba0fbc58aca2e7b961f01f95f199d04a07c839407340e84430fad1a2e5454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p18",
+  "name": "Meta Glow Highlighter",
+  "brand": "Essence",
+  "cat": [
+   "Rostro"
+  ],
+  "type": "Iluminadores",
+  "price": 26000,
+  "offer": 0,
+  "stock": 1,
+  "img": "f2e0572e261a020cea0f8e4e34821234c0372276f1c6c6b32a038f8bcdf8f9e4454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p19",
+  "name": "Mascaras Essence",
+  "brand": "Essence",
+  "cat": [
+   "Ojos"
+  ],
+  "type": "Máscaras de pestañas",
+  "price": 25000,
+  "offer": 21000,
+  "stock": 12,
+  "img": "cc80262f69bcc60d41ac7bb368bb99bebf90cb99b304d89023c7cbd35f562d87454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p20",
+  "name": "Cream glide Lip Liner ELF",
+  "brand": "e.l.f.",
+  "cat": [
+   "Labios"
+  ],
+  "type": "Delineadores de labios",
+  "price": 12500,
+  "offer": 0,
+  "stock": 6,
+  "img": "eb81039d6a721405ef809a2404e1b5bf0fb340fc3e67908fc2361ba573867d8a454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p21",
+  "name": "Intense ink Eyeliner",
+  "brand": "e.l.f.",
+  "cat": [
+   "Ojos"
+  ],
+  "type": "Delineadores de ojos",
+  "price": 34000,
+  "offer": 25000,
+  "stock": 2,
+  "img": "36cbecc6fc630d629adcfd4761adc865b664b41282fa73b00b52fcd17f2a2cce454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p22",
+  "name": "Liquid Liner Set of 2",
+  "brand": "e.l.f.",
+  "cat": [
+   "Ojos"
+  ],
+  "type": "Delineadores de ojos",
+  "price": 35000,
+  "offer": 0,
+  "stock": 1,
+  "img": "d71e2d9249d1dbc601de8befb8ac198a79acdfd6e01c74857e92588e6323cb81454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p23",
+  "name": "Halo Glow Setting Powder",
+  "brand": "e.l.f.",
+  "cat": [
+   "Rostro"
+  ],
+  "type": "Polvos",
+  "price": 35000,
+  "offer": 0,
+  "stock": 1,
+  "img": "323eb48dfc46dd40ed1df3193adfc5fa1ca9615df2d1cd69b48711a563eb4171454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p24",
+  "name": "Power Primer ELF",
+  "brand": "e.l.f.",
+  "cat": [
+   "Rostro"
+  ],
+  "type": "Primers",
+  "price": 35000,
+  "offer": 0,
+  "stock": 2,
+  "img": "67c4f3aa49cf372d3c1295debea1edf4dd387e0e227bff0ba71c9ff71f7d40be454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p25",
+  "name": "Perfect Finish HD Powder",
+  "brand": "e.l.f.",
+  "cat": [
+   "Rostro"
+  ],
+  "type": "Polvos",
+  "price": 40000,
+  "offer": 0,
+  "stock": 2,
+  "img": "0056bc04f463931ef5b6a4b29fa6606aea4a3edd9bffbc6045f25772e610935a454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p26",
+  "name": "Sheer for it blush lip mas cheek tint",
+  "brand": "Otras marcas",
+  "cat": [
+   "Labios"
+  ],
+  "type": "Bálsamos y tintes",
+  "price": 28000,
+  "offer": 0,
+  "stock": 0,
+  "img": "29fcc951fa0ca2aca95034dd2fd9e4e76eeffc999c713b3a63807dc7af55b7d1454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p27",
+  "name": "Instant Lift Brow Pencil",
+  "brand": "e.l.f.",
+  "cat": [
+   "Cejas"
+  ],
+  "type": "Productos para cejas",
+  "price": 21000,
+  "offer": 0,
+  "stock": 2,
+  "img": "d218075760e54d0b3bfd19fce73913f63a952a30bc74d720295c20f3cf951b29454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p28",
+  "name": "Soft Glam Santin Concealer",
+  "brand": "e.l.f.",
+  "cat": [
+   "Rostro"
+  ],
+  "type": "Correctores",
+  "price": 25000,
+  "offer": 0,
+  "stock": 2,
+  "img": "e3eb5547afd333b0d5efe92281207437b91a6f77c8fca4b92945660c65722a54454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p29",
+  "name": "Glow Reviver Sliptick ELF",
+  "brand": "e.l.f.",
+  "cat": [
+   "Labios"
+  ],
+  "type": "Labiales y gloss",
+  "price": 35000,
+  "offer": 0,
+  "stock": 2,
+  "img": "1b8eee13c5d2128c4bab3a86ce8a001d2725b29af8904fca356c20c165fe996d454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p30",
+  "name": "Exfoliante Corporal Dove White Pech y Crushed Rice",
+  "brand": "Dove",
+  "cat": [
+   "Cuerpo y bienestar"
+  ],
+  "type": "Exfoliantes",
+  "price": 45000,
+  "offer": 0,
+  "stock": 0,
+  "img": "f86c3e1a26e49927952c4934350076c49897e35156f853a280956471ff746d1f454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p31",
+  "name": "Exfoliante Corporal Dove Dragon Fruit y Coconut",
+  "brand": "Dove",
+  "cat": [
+   "Cuerpo y bienestar"
+  ],
+  "type": "Exfoliantes",
+  "price": 45000,
+  "offer": 0,
+  "stock": 0,
+  "img": "1d33eb2477e604f581e0d4382fbf551ef38a67a28e025cfcaf0d335b1854f7b7454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p32",
+  "name": "Vitaminas en gomitas para uñas, cabello y piel Natures Bounty",
+  "brand": "Nature's Bounty",
+  "cat": [
+   "Cuerpo y bienestar"
+  ],
+  "type": "Vitaminas",
+  "price": 25000,
+  "offer": 0,
+  "stock": 0,
+  "img": "fcbc6aca8581512d2db42d2155169708e79cc6b72efc8294ed480606b919641b454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p33",
+  "name": "Duo dermasil Daily cream y Night cream",
+  "brand": "Dermasil",
+  "cat": [
+   "Skincare"
+  ],
+  "type": "Cremas",
+  "price": 20000,
+  "offer": 0,
+  "stock": 0,
+  "img": "2ce6281ba21dd7b9fdae1dfb5716fe28ee0f45d93e0697d843570aaa008036ba454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p34",
+  "name": "Dermasil daily face cream",
+  "brand": "Dermasil",
+  "cat": [
+   "Skincare"
+  ],
+  "type": "Cremas",
+  "price": 14000,
+  "offer": 0,
+  "stock": 0,
+  "img": "cecc79598dbe1cf7b5074c6f8029f36be0894b1508fb9c1437e60ba9119895fb454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p35",
+  "name": "Dermasil MultiVitamin Eye Roller, serum para ojeras",
+  "brand": "Dermasil",
+  "cat": [
+   "Skincare"
+  ],
+  "type": "Sérums",
+  "price": 12000,
+  "offer": 0,
+  "stock": 2,
+  "img": "cf420908d43af84904c5fa7d8b2a80bc6c7d8acb160cdb241cb4b812aeeaf6a6454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p36",
+  "name": "Bpure Serum Cuidado Facial 30ml Piel Normal",
+  "brand": "Bpure",
+  "cat": [
+   "Skincare"
+  ],
+  "type": "Sérums",
+  "price": 16000,
+  "offer": 0,
+  "stock": 0,
+  "img": "4619627e97efea77e458c3ace3dfa1d9f47d2c512b14e01d65afd8667da7258c454205.webp",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p37",
+  "name": "Sérum Corporal Y Facial Sheer Melon 95.8g",
+  "brand": "Otras marcas",
+  "cat": [
+   "Cuerpo y bienestar"
+  ],
+  "type": "Sérums",
+  "price": 14000,
+  "offer": 0,
+  "stock": 0,
+  "img": "22c9dc6186ab0905db879c834f7362c1be1f63258d22d77197bf0cbaaefed305454205.webp",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p38",
+  "name": "Extreme Shine Volume Lipgloss ESSENCE",
+  "brand": "Essence",
+  "cat": [
+   "Labios"
+  ],
+  "type": "Labiales y gloss",
+  "price": 23000,
+  "offer": 20000,
+  "stock": 0,
+  "img": "77741d100ec311ae40aca6a8061fe20eb65752f1ba13a0503c346906fa2d7c40454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p39",
+  "name": "Camo Liquid Blush cheeeky lychee",
+  "brand": "e.l.f.",
+  "cat": [
+   "Rostro"
+  ],
+  "type": "Rubores",
+  "price": 32000,
+  "offer": 0,
+  "stock": 1,
+  "img": "80d5be9da132455074f61c7f5de47a9a6abf23d96a4c154c87a95b9066925092454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p40",
+  "name": "Real Techniques Cover y Conceal Brocha de maquillaje de doble punta",
+  "brand": "Real Techniques",
+  "cat": [
+   "Brochas y accesorios"
+  ],
+  "type": "Brochas y esponjas",
+  "price": 40000,
+  "offer": 0,
+  "stock": 1,
+  "img": "75b2a4e4ce8dbb252778377475794f38f290679afc1e5eda88bd7b724ee7def1454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p41",
+  "name": "ELF Instant Lift Brow Pencil Set of 2 Deep Brown",
+  "brand": "e.l.f.",
+  "cat": [
+   "Cejas"
+  ],
+  "type": "Productos para cejas",
+  "price": 35000,
+  "offer": 0,
+  "stock": 1,
+  "img": "903b927591441113022b9a55741e48a64dcf0fa3d5a33288ce584a18f83d37e3454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p42",
+  "name": "e.l.f. Enhancing Lash y Brow Serum - Serum Fortalecedor de Pestañas y Cejas",
+  "brand": "e.l.f.",
+  "cat": [
+   "Cejas",
+   "Ojos"
+  ],
+  "type": "Productos para cejas",
+  "price": 30000,
+  "offer": 0,
+  "stock": 1,
+  "img": "8016910cee764ef924f8d33935ec54c01d7508d1780c7a7955a039ebd8951425454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p43",
+  "name": "Máscara de Cejas y Pestañas Transparente e.l.f. / Clear",
+  "brand": "e.l.f.",
+  "cat": [
+   "Cejas",
+   "Ojos"
+  ],
+  "type": "Máscaras de pestañas",
+  "price": 21000,
+  "offer": 0,
+  "stock": 1,
+  "img": "a0889afa7ddeded166232a507bb91d41e8066672a8913c54aa54f83b385cf462454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p44",
+  "name": "Set 2 mascaras doble transparente cejas y pestañas E.LF",
+  "brand": "e.l.f.",
+  "cat": [
+   "Cejas",
+   "Ojos"
+  ],
+  "type": "Máscaras de pestañas",
+  "price": 35000,
+  "offer": 0,
+  "stock": 0,
+  "img": "4620bc21dce36c0811d8dd43359d94adac6bd352af58b86c3b995bce651ed674454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p45",
+  "name": "Mascara Big Mood waterproof Mega Volumen E.L.F",
+  "brand": "e.l.f.",
+  "cat": [
+   "Ojos"
+  ],
+  "type": "Máscaras de pestañas",
+  "price": 30000,
+  "offer": 0,
+  "stock": 1,
+  "img": "459482d8062e5abfe67c59954a31b78678e58259b9bd5e0eb6c02a89c4bf750b454205.png",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p46",
+  "name": "Set de brocha kabuki y esponja de maquillaje XOXO.",
+  "brand": "Otras marcas",
+  "cat": [
+   "Brochas y accesorios"
+  ],
+  "type": "Brochas y esponjas",
+  "price": 16000,
+  "offer": 0,
+  "stock": 1,
+  "img": "9d63d2458fa57911ea57f6582eb26c5e50d7721a0078e25cfe89f1ce2688fef3454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p47",
+  "name": "Delineador de labios L.A COLORS",
+  "brand": "L.A. Colors",
+  "cat": [
+   "Labios"
+  ],
+  "type": "Delineadores de labios",
+  "price": 11000,
+  "offer": 0,
+  "stock": 1,
+  "img": "90f26815a20bffa75183d37a17a85b7932d914405866a2d294de3ed1b1897dc5454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p48",
+  "name": "Lapiz de sombra de ojos L.A COLORS",
+  "brand": "L.A. Colors",
+  "cat": [
+   "Ojos"
+  ],
+  "type": "Sombras y paletas",
+  "price": 11000,
+  "offer": 0,
+  "stock": 3,
+  "img": "2f3be51da22c9047bf5fe7a0fc2a0dddafd88137d4182da77358212e88023ff9454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p49",
+  "name": "Paleta de sombras Beauty Treats",
+  "brand": "Beauty Treats",
+  "cat": [
+   "Ojos"
+  ],
+  "type": "Sombras y paletas",
+  "price": 28000,
+  "offer": 0,
+  "stock": 1,
+  "img": "156e72def4ae3434520abd084d856d923eee5b666827a4d0866f97e4ccb3196f454205.jpg",
+  "mp": "",
+  "variants": []
+ },
+ {
+  "id": "p50",
+  "name": "GEL DE PAPRIKA DE FARMASI",
+  "brand": "Farmasi",
+  "cat": [
+   "Cuerpo y bienestar"
+  ],
+  "type": "Cremas",
+  "price": 45000,
+  "offer": 0,
+  "stock": 9,
+  "img": "163bf82b9ff5344c0b58e74abe4d484c5e1b404bfddea7399c8bf5ac0aea212d454205.jpg",
+  "mp": "",
+  "variants": []
+ }
+]

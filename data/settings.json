@@ -1,0 +1,34 @@
+{
+ "tagline": "Venta de productos importados originales",
+ "heroTitle": "Maquillaje y skincare",
+ "heroHighlight": "importado y original",
+ "heroText": "Elegí tus productos, armá tu pedido y mandalo por WhatsApp en segundos.",
+ "badges": [
+  "100% originales",
+  "5% off con transferencia",
+  "Envíos a todo el país"
+ ],
+ "whatsapp": "5491158252255",
+ "phoneLabel": "011 5825-2255",
+ "email": "mariaquintaleeuu@gmail.com",
+ "place": "Avellaneda, Buenos Aires",
+ "instagram": "https://instagram.com/ONLY_IMPORTSARG",
+ "tiktok": "https://tiktok.com/@ONLYIMPORTS2",
+ "transferDiscount": 5,
+ "colors": {
+  "pink": "#ff5fa2",
+  "purple": "#a66bff",
+  "peach": "#ffb347"
+ },
+ "animatedBackground": true,
+ "categoryOrder": [
+  "Ojos",
+  "Labios",
+  "Rostro",
+  "Cejas",
+  "Skincare",
+  "Cuerpo y bienestar",
+  "Brochas y accesorios"
+ ],
+ "imageBase": "https://d22fxaf9t8d39k.cloudfront.net/"
+}

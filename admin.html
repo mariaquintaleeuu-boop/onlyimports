@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Panel · Only Imports</title>
+<meta name="theme-color" content="#3a2347">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Poppins:wght@400;500;600;700&display=swap">
+<style>
+:root{--pink:#ff5fa2;--purple:#a66bff;--ink:#3a2347;--muted:#7a6585;--line:#efe4f6;--soft:#f8f3fb;--ok:#1f9d55;--bad:#d64545}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:Poppins,system-ui,sans-serif;color:var(--ink);background:var(--soft);-webkit-font-smoothing:antialiased;padding-bottom:90px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+h1,h2,h3{font-family:Fredoka,sans-serif;margin:0}
+.hidden{display:none!important}
+.wrap{width:min(960px,100% - 24px);margin-inline:auto}
+
+/* Login */
+.login{min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(160deg,#fff0f7,#f5edff 50%,#fff4e8)}
+.login-box{width:min(420px,100%);background:#fff;border-radius:24px;padding:28px;box-shadow:0 20px 50px -24px #a66bff}
+.login-box h1{font-size:30px;margin:10px 0 4px}
+.login-box p{color:var(--muted);font-size:14px;margin:0 0 18px}
+.login-box details{margin-top:16px;font-size:13px;color:var(--muted)}
+.login-box summary{cursor:pointer;font-weight:600;color:var(--ink)}
+.login-box ol{padding-left:18px;line-height:1.6}
+.globe{width:56px;height:56px}
+
+/* Fields */
+label.f{display:block;font-size:13px;font-weight:600;margin:0 0 12px}
+label.f span{display:block;margin-bottom:5px}
+.in{width:100%;border:2px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff;outline:none;font-size:16px}
+.in:focus{border-color:var(--purple)}
+textarea.in{resize:vertical;min-height:70px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{border:0;border-radius:12px;padding:12px 18px;font-weight:700;background:var(--ink);color:#fff}
+.btn.full{width:100%}
+.btn.soft{background:#f1e7f8;color:var(--ink)}
+.btn.danger{background:#fde8e8;color:var(--bad)}
+.btn.grad{background:linear-gradient(90deg,var(--pink),var(--purple))}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.err{color:var(--bad);font-size:13px;margin:8px 0 0}
+
+/* Top bar */
+.top{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0}
+.brandmark{display:flex;align-items:center;gap:8px;font:700 19px Fredoka,sans-serif}
+.brandmark svg{width:32px;height:32px}
+.top a,.logout{font-size:13px;font-weight:600;color:var(--muted);background:none;border:0;text-decoration:none}
+.tabs{display:flex;gap:6px;padding:0 0 10px}
+.tab{flex:1;border:0;border-radius:12px;padding:10px;font-weight:700;background:var(--soft);color:var(--muted)}
+.tab.on{background:var(--ink);color:#fff}
+
+/* Save bar */
+.savebar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#fff;border-top:1px solid var(--line);box-shadow:0 -10px 30px -20px #a66bff}
+.savebar .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0}
+.savebar p{margin:0;font-size:13px;font-weight:600;color:var(--muted)}
+.savebar p.dirty{color:#c2367a}
+.savebar .btn{min-width:130px}
+
+/* Products */
+.tools{display:grid;gap:10px;margin:16px 0}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:0;border-radius:999px;padding:8px 14px;background:#fff;font-size:13px;font-weight:600;white-space:nowrap;box-shadow:0 1px 0 var(--line)}
+.chip.on{background:var(--ink);color:#fff}
+.group h2{font-size:20px;margin:22px 0 10px;display:flex;justify-content:space-between;align-items:baseline}
+.group h2 small{font:600 13px Poppins,sans-serif;color:var(--muted)}
+.prod{display:grid;grid-template-columns:62px 1fr auto;gap:12px;align-items:center;background:#fff;border-radius:16px;padding:10px;margin-bottom:8px;box-shadow:0 6px 18px -16px #a66bff}
+.prod img{width:62px;height:62px;object-fit:contain;border-radius:12px;background:var(--soft)}
+.prod .info{min-width:0;cursor:pointer}
+.prod .name{font-size:14px;font-weight:600;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.prod .meta{font-size:12px;color:var(--muted);margin-top:2px}
+.prod .meta b{color:var(--ink)}
+.pill{display:inline-block;border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700}
+.pill.out{background:#fde8e8;color:var(--bad)}
+.pill.low{background:#fff3dc;color:#a8610a}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:34px;height:34px;border-radius:50%;border:0;background:var(--soft);font-weight:700;font-size:18px;line-height:1}
+.stepper b{min-width:24px;text-align:center}
+.var-btn{border:0;background:var(--soft);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:700}
+.empty{text-align:center;color:var(--muted);padding:30px 0}
+
+/* Editor sheet */
+.sheet-bg{position:fixed;inset:0;z-index:30;background:#3a234766}
+.sheet{position:fixed;z-index:31;left:0;right:0;bottom:0;max-height:94vh;overflow:auto;background:#fff;border-radius:24px 24px 0 0;padding:0 18px 110px}
+@media(min-width:760px){.sheet{left:50%;bottom:auto;top:4vh;width:680px;transform:translateX(-50%);border-radius:24px;max-height:92vh;padding-bottom:24px}}
+.sheet-head{position:sticky;top:0;background:#fff;display:flex;justify-content:space-between;align-items:center;padding:16px 0 12px;z-index:1;border-bottom:1px solid var(--line);margin-bottom:14px}
+.sheet-head h2{font-size:22px}
+.x{border:0;background:var(--soft);width:38px;height:38px;border-radius:50%;font-size:20px}
+.photo{display:flex;gap:14px;align-items:center;margin-bottom:16px}
+.photo img{width:110px;height:110px;object-fit:contain;border-radius:16px;background:var(--soft);border:2px dashed var(--line)}
+.photo .btn{padding:10px 14px}
+.upl{position:relative;overflow:hidden;display:inline-block}
+.upl input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.cat-pick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.cat-pick label{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);border-radius:99px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
+.cat-pick input{accent-color:var(--purple)}
+.cat-pick label:has(input:checked){border-color:var(--purple);background:#f4ecff}
+.box{border:2px solid var(--line);border-radius:16px;padding:14px;margin:6px 0 16px}
+.box h3{font-size:17px;margin-bottom:4px}
+.box p.hint{margin:0 0 10px;font-size:12px;color:var(--muted)}
+.vrow{display:grid;grid-template-columns:44px 1fr auto auto;gap:8px;align-items:center;margin-bottom:8px}
+.vrow img,.vrow .noimg{width:44px;height:44px;border-radius:10px;object-fit:contain;background:var(--soft);border:2px dashed var(--line)}
+.vrow .in{padding:9px 10px;font-size:15px}
+.vdel{border:0;background:none;color:var(--bad);font-size:20px;padding:4px}
+.sheet-actions{display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-top:10px}
+#e-del.hidden+#e-ok{grid-column:1/-1}
+.switch{display:flex;align-items:center;gap:10px;font-weight:600;font-size:14px;margin-bottom:12px;cursor:pointer}
+.switch input{width:20px;height:20px;accent-color:var(--purple)}
+
+/* Design tab */
+.card{background:#fff;border-radius:18px;padding:18px;margin:16px 0;box-shadow:0 6px 18px -16px #a66bff}
+.card h2{font-size:20px;margin-bottom:12px}
+.colors{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.colors label{font-size:12px;font-weight:600;text-align:center}
+.colors input{width:100%;height:52px;border:2px solid var(--line);border-radius:12px;padding:2px;background:#fff;cursor:pointer}
+.preview{height:16px;border-radius:99px;margin-top:12px}
+.order li{display:flex;align-items:center;justify-content:space-between;background:var(--soft);border-radius:12px;padding:8px 10px;margin-bottom:6px;font-weight:600;font-size:14px}
+.order ul{list-style:none;padding:0;margin:0}
+.order button{border:0;background:#fff;border-radius:8px;width:32px;height:32px;margin-left:4px;font-weight:700}
+
+.toast{position:fixed;left:50%;top:14px;z-index:60;transform:translate(-50%,-120px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:999px;font-weight:600;font-size:14px;transition:transform .3s;white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis}
+.toast.show{transform:translate(-50%,0)}
+.toast.bad{background:var(--bad)}
+.busy{position:fixed;inset:0;z-index:70;background:#ffffffb3;display:grid;place-items:center;font-weight:700}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff5fa2"/><stop offset=".55" stop-color="#a66bff"/><stop offset="1" stop-color="#ffb347"/></linearGradient><symbol id="globe" viewBox="0 0 64 64"><circle cx="32" cy="32" r="29" fill="url(#g)"/><g fill="none" stroke="#fff" stroke-width="2.6"><ellipse cx="32" cy="32" rx="12.5" ry="29"/><path d="M3 32H61M6.6 18H57.4M6.6 46H57.4M32 3V61"/></g></symbol></defs></svg>
+
+<!-- ============ LOGIN ============ -->
+<section class="login" id="login">
+  <form class="login-box" id="login-form">
+    <svg class="globe"><use href="#globe"/></svg>
+    <h1>Panel de Only Imports</h1>
+    <p>Ingresá tu clave de acceso para administrar productos, stock y diseño.</p>
+    <label class="f"><span>Clave de acceso</span><input class="in" id="token" type="password" autocomplete="current-password" required placeholder="github_pat_..."></label>
+    <button class="btn grad full" type="submit">Entrar</button>
+    <p class="err" id="login-err"></p>
+    <details>
+      <summary>¿Cómo consigo la clave?</summary>
+      <ol>
+        <li>Entrá a github.com con la cuenta de la tienda.</li>
+        <li>Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token.</li>
+        <li>En "Repository access" elegí solo el repositorio de la página.</li>
+        <li>En "Permissions", Contents: <b>Read and write</b>.</li>
+        <li>Generá el token, copialo y pegalo acá. Queda guardado en este dispositivo.</li>
+      </ol>
+    </details>
+  </form>
+</section>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden">
+  <header class="top">
+    <div class="wrap">
+      <div class="brandmark"><svg><use href="#globe"/></svg>Panel</div>
+      <div><a href="./" target="_blank" rel="noopener">Ver página ↗</a> · <button class="logout" id="logout">Salir</button></div>
+    </div>
+    <div class="wrap tabs">
+      <button class="tab on" data-tab="products">Productos</button>
+      <button class="tab" data-tab="design">Diseño</button>
+    </div>
+  </header>
+
+  <!-- Products tab -->
+  <main class="wrap" id="tab-products">
+    <div class="tools">
+      <input class="in" id="q" type="search" placeholder="Buscar producto, marca o tipo...">
+      <div class="chips" id="cat-chips"></div>
+      <div class="chips" id="stock-chips">
+        <button class="chip on" data-s="all">Todos</button>
+        <button class="chip" data-s="in">Con stock</button>
+        <button class="chip" data-s="low">Stock bajo (1)</button>
+        <button class="chip" data-s="out">Sin stock</button>
+      </div>
+      <button class="btn grad" id="new-prod">＋ Nuevo producto</button>
+    </div>
+    <div id="list"></div>
+  </main>
+
+  <!-- Design tab -->
+  <main class="wrap hidden" id="tab-design">
+    <div class="card">
+      <h2>Textos principales</h2>
+      <label class="f"><span>Frase de la barra de arriba</span><input class="in" data-set="tagline"></label>
+      <label class="f"><span>Título (primera línea)</span><input class="in" data-set="heroTitle"></label>
+      <label class="f"><span>Título (segunda línea, en colores)</span><input class="in" data-set="heroHighlight"></label>
+      <label class="f"><span>Texto debajo del título</span><textarea class="in" data-set="heroText"></textarea></label>
+      <label class="f"><span>Etiqueta 1</span><input class="in" data-badge="0"></label>
+      <label class="f"><span>Etiqueta 2</span><input class="in" data-badge="1"></label>
+      <label class="f"><span>Etiqueta 3</span><input class="in" data-badge="2"></label>
+    </div>
+    <div class="card">
+      <h2>Colores</h2>
+      <div class="colors">
+        <label>Rosa<input type="color" data-color="pink"></label>
+        <label>Violeta<input type="color" data-color="purple"></label>
+        <label>Durazno<input type="color" data-color="peach"></label>
+      </div>
+      <div class="preview" id="color-preview"></div>
+      <label class="switch" style="margin-top:16px"><input type="checkbox" id="anim"> Fondo animado con productos</label>
+    </div>
+    <div class="card">
+      <h2>Contacto y ventas</h2>
+      <label class="f"><span>WhatsApp (con código de país, sin espacios. Ej: 5491158252255)</span><input class="in" data-set="whatsapp" inputmode="numeric"></label>
+      <label class="f"><span>Teléfono como se muestra</span><input class="in" data-set="phoneLabel"></label>
+      <label class="f"><span>Email</span><input class="in" data-set="email" type="email"></label>
+      <label class="f"><span>Ubicación</span><input class="in" data-set="place"></label>
+      <label class="f"><span>Instagram (link)</span><input class="in" data-set="instagram"></label>
+      <label class="f"><span>TikTok (link)</span><input class="in" data-set="tiktok"></label>
+      <label class="f"><span>Descuento por transferencia (%)</span><input class="in" data-set="transferDiscount" type="number" min="0" max="90" inputmode="numeric"></label>
+    </div>
+    <div class="card order">
+      <h2>Orden de las categorías</h2>
+      <ul id="cat-order"></ul>
+    </div>
+  </main>
+
+  <div class="savebar">
+    <div class="wrap">
+      <p id="save-state">Sin cambios</p>
+      <button class="btn grad" id="save" disabled>Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PRODUCT EDITOR ============ -->
+<div class="sheet-bg hidden" id="sheet-bg"></div>
+<section class="sheet hidden" id="sheet" aria-modal="true" role="dialog">
+  <div class="sheet-head"><h2 id="sheet-title">Editar producto</h2><button class="x" id="sheet-close" aria-label="Cerrar">×</button></div>
+  <div class="photo">
+    <img id="e-img" alt="">
+    <div>
+      <span class="btn soft upl">Cambiar foto<input type="file" accept="image/*" id="e-file"></span>
+      <p class="hint" style="font-size:12px;color:var(--muted);margin:6px 0 0">Se achica sola para que cargue rápido.</p>
+    </div>
+  </div>
+  <label class="f"><span>Nombre</span><input class="in" id="e-name"></label>
+  <div class="row">
+    <label class="f"><span>Marca</span><input class="in" id="e-brand" list="dl-brands"></label>
+    <label class="f"><span>Tipo de producto</span><input class="in" id="e-type" list="dl-types"></label>
+  </div>
+  <div class="f" style="font-size:13px;font-weight:600;margin-bottom:6px">Categorías</div>
+  <div class="cat-pick" id="e-cats"></div>
+  <div class="row" style="margin-bottom:12px"><input class="in" id="e-newcat" placeholder="Nueva categoría..."><button class="btn soft" id="e-addcat" type="button">Agregar</button></div>
+  <div class="row">
+    <label class="f"><span>Precio ($)</span><input class="in" id="e-price" type="number" min="0" inputmode="numeric"></label>
+    <label class="f"><span>Precio de oferta ($, 0 = sin oferta)</span><input class="in" id="e-offer" type="number" min="0" inputmode="numeric"></label>
+  </div>
+
+  <div class="box">
+    <label class="switch"><input type="checkbox" id="e-hasvar"> Tiene variantes (tonos, colores, diseños)</label>
+    <div id="e-novar">
+      <div class="f" style="font-size:13px;font-weight:600;margin-bottom:6px">Stock</div>
+      <div class="stepper"><button type="button" data-st="-1">−</button><b id="e-stock">0</b><button type="button" data-st="1">+</button></div>
+    </div>
+    <div id="e-var" class="hidden">
+      <p class="hint">Cada variante tiene su propio stock. La foto es opcional: si no tiene, se usa la del producto.</p>
+      <div id="e-vlist"></div>
+      <button class="btn soft full" type="button" id="e-addvar">＋ Agregar variante</button>
+    </div>
+  </div>
+
+  <label class="f"><span>Link de pago de Mercado Pago (opcional)</span><input class="in" id="e-mp" type="url" placeholder="https://mpago.la/..."></label>
+
+  <div class="sheet-actions">
+    <button class="btn danger" id="e-del" type="button">Eliminar</button>
+    <button class="btn grad" id="e-ok" type="button">Listo</button>
+  </div>
+</section>
+
+<datalist id="dl-brands"></datalist>
+<datalist id="dl-types"></datalist>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="busy hidden" id="busy">Guardando…</div>
+
+<script>
+/* ==========================================================
+   Only Imports admin panel.
+   Data lives in the site's GitHub repository:
+   data/products.json, data/settings.json and img/ (photos).
+   ========================================================== */
+const REPO = 'mariaquintaleeuu-boop/onlyimports';   // "owner/repository" — set when the site is published
+const BRANCH = 'main';
+const API = 'https://api.github.com/repos/' + REPO + '/contents/';
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
+
+let token = '';
+let products = [], settings = {};
+const sha = {};                 // current file versions in GitHub
+let saved = { products: '', settings: '' };
+let editing = null;             // copy of the product being edited
+let catFilter = '', stockFilter = 'all', query = '';
+
+// ---------- Helpers ----------
+function toast(text, bad) {
+  const t = $('#toast'); t.textContent = text; t.classList.toggle('bad', !!bad); t.classList.add('show');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+const b64encode = (bytes) => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); };
+const encodeText = (str) => b64encode(new TextEncoder().encode(str));
+const decodeText = (b64) => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, '')), (c) => c.charCodeAt(0)));
+const imgSrc = (img) => !img ? '' : /^(https?:|data:|blob:)/.test(img) ? img : /^img\//.test(img) ? img : (settings.imageBase || '') + img;
+const stockOf = (p) => (p.variants && p.variants.length) ? p.variants.reduce((a, v) => a + (+v.stock || 0), 0) : (+p.stock || 0);
+const catsOf = (p) => [].concat(p.cat || []);
+const slug = (s) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'foto';
+const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+async function gh(path, opts) {
+  const r = await fetch(API + path + (opts && opts.method ? '' : '?ref=' + BRANCH), Object.assign({
+    headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json' }
+  }, opts || {}));
+  if (!r.ok) { const e = new Error('GitHub ' + r.status); e.status = r.status; throw e; }
+  return r.json();
+}
+async function readJSON(path) {
+  const f = await gh(path);
+  sha[path] = f.sha;
+  return JSON.parse(decodeText(f.content));
+}
+async function writeFile(path, base64, message) {
+  const body = { message, content: base64, branch: BRANCH };
+  if (sha[path]) body.sha = sha[path];
+  const r = await gh(path, { method: 'PUT', body: JSON.stringify(body) });
+  sha[path] = r.content.sha;
+}
+
+// ---------- Login ----------
+async function login(t) {
+  token = t.trim();
+  $('#login-err').textContent = '';
+  try {
+    [settings, products] = await Promise.all([readJSON('data/settings.json'), readJSON('data/products.json')]);
+  } catch (e) {
+    token = '';
+    $('#login-err').textContent = e.status === 401 || e.status === 403 || e.status === 404
+      ? 'La clave no es válida o no tiene permiso sobre la página.'
+      : 'No se pudo conectar. Revisá tu internet e intentá de nuevo.';
+    return false;
+  }
+  try { localStorage.setItem('oi-admin-token', token); } catch (e) {}
+  products.forEach((p) => { p.variants = p.variants || []; if (!p.id) p.id = newId(); });
+  saved = { products: JSON.stringify(products), settings: JSON.stringify(settings) };
+  $('#login').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+  fillDesign(); renderList(); updateSaveState();
+  return true;
+}
+$('#login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('button'); btn.disabled = true; btn.textContent = 'Entrando…';
+  await login($('#token').value);
+  btn.disabled = false; btn.textContent = 'Entrar';
+});
+$('#logout').addEventListener('click', () => {
+  if (isDirty() && !confirm('Tenés cambios sin guardar. ¿Salir igual?')) return;
+  try { localStorage.removeItem('oi-admin-token'); } catch (e) {}
+  location.reload();
+});
+let storedToken = '';
+try { storedToken = localStorage.getItem('oi-admin-token') || ''; } catch (e) {}
+if (storedToken) login(storedToken);
+
+// ---------- Tabs ----------
+document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x === b));
+  $('#tab-products').classList.toggle('hidden', b.dataset.tab !== 'products');
+  $('#tab-design').classList.toggle('hidden', b.dataset.tab !== 'design');
+  if (b.dataset.tab === 'design') renderCatOrder();
+}));
+
+// ---------- Save ----------
+const isDirty = () => JSON.stringify(products) !== saved.products || JSON.stringify(settings) !== saved.settings;
+function updateSaveState() {
+  const p = JSON.stringify(products) !== saved.products, s = JSON.stringify(settings) !== saved.settings;
+  const st = $('#save-state');
+  st.textContent = p && s ? 'Cambios sin guardar en productos y diseño' : p ? 'Cambios sin guardar en productos' : s ? 'Cambios sin guardar en diseño' : 'Todo guardado ✓';
+  st.classList.toggle('dirty', p || s);
+  $('#save').disabled = !(p || s);
+}
+$('#save').addEventListener('click', async () => {
+  $('#busy').classList.remove('hidden');
+  try {
+    if (JSON.stringify(products) !== saved.products) {
+      await writeFile('data/products.json', encodeText(JSON.stringify(products, null, 1)), 'Actualizar productos desde el panel');
+      saved.products = JSON.stringify(products);
+    }
+    if (JSON.stringify(settings) !== saved.settings) {
+      await writeFile('data/settings.json', encodeText(JSON.stringify(settings, null, 1)), 'Actualizar diseño desde el panel');
+      saved.settings = JSON.stringify(settings);
+    }
+    toast('Guardado ✓ La página se actualiza en 1-2 minutos');
+  } catch (e) {
+    toast(e.status === 409 ? 'Hubo cambios desde otro dispositivo. Recargá el panel.' : 'No se pudo guardar. Intentá de nuevo.', true);
+  }
+  $('#busy').classList.add('hidden');
+  updateSaveState();
+});
+window.addEventListener('beforeunload', (e) => { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
+
+// ---------- Product list ----------
+function allCats() {
+  const set = new Set(settings.categoryOrder || []);
+  products.forEach((p) => catsOf(p).forEach((c) => c && set.add(c)));
+  return [...set];
+}
+function renderList() {
+  const cats = allCats();
+  $('#cat-chips').innerHTML = '<button class="chip' + (!catFilter ? ' on' : '') + '" data-c="">Todas</button>' +
+    cats.map((c) => '<button class="chip' + (catFilter === c ? ' on' : '') + '" data-c="' + esc(c) + '">' + esc(c) + '</button>').join('');
+  // suggestions for the editor
+  $('#dl-brands').innerHTML = [...new Set(products.map((p) => p.brand).filter(Boolean))].sort().map((b) => '<option value="' + esc(b) + '">').join('');
+  $('#dl-types').innerHTML = [...new Set(products.map((p) => p.type).filter(Boolean))].sort().map((b) => '<option value="' + esc(b) + '">').join('');
+
+  const q = norm(query);
+  const match = (p) => {
+    const s = stockOf(p);
+    return (!catFilter || catsOf(p).includes(catFilter)) &&
+      (stockFilter === 'all' || (stockFilter === 'in' && s > 0) || (stockFilter === 'out' && s <= 0) || (stockFilter === 'low' && s === 1)) &&
+      (!q || norm(p.name + ' ' + p.brand + ' ' + p.type).includes(q));
+  };
+  const groups = (catFilter ? [catFilter] : cats.concat(['Sin categoría']));
+  let html = '';
+  groups.forEach((g) => {
+    const items = products.filter((p) => match(p) && (g === 'Sin categoría' ? !catsOf(p).length : catsOf(p)[0] === g || (catFilter && catsOf(p).includes(g))));
+    if (!items.length) return;
+    html += '<section class="group"><h2>' + esc(g) + '<small>' + items.length + ' productos · ' + items.reduce((a, p) => a + stockOf(p), 0) + ' u.</small></h2>' +
+      items.map(rowHTML).join('') + '</section>';
+  });
+  $('#list').innerHTML = html || '<p class="empty">No hay productos con ese filtro.</p>';
+}
+function rowHTML(p) {
+  const s = stockOf(p), hasVar = p.variants && p.variants.length;
+  const price = +p.offer > 0 && +p.offer < +p.price ? '<s>' + money.format(p.price) + '</s> <b>' + money.format(p.offer) + '</b>' : '<b>' + money.format(p.price || 0) + '</b>';
+  return '<article class="prod" data-id="' + esc(p.id) + '">' +
+    '<img src="' + esc(imgSrc(p.img)) + '" alt="" loading="lazy">' +
+    '<div class="info" data-edit="' + esc(p.id) + '"><div class="name">' + esc(p.name || 'Sin nombre') + '</div>' +
+    '<div class="meta">' + esc(p.brand || '') + (p.brand ? ' · ' : '') + price + ' ' +
+    (s <= 0 ? '<span class="pill out">Sin stock</span>' : s === 1 ? '<span class="pill low">Último</span>' : '') + '</div></div>' +
+    (hasVar
+      ? '<button class="var-btn" data-edit="' + esc(p.id) + '">' + p.variants.length + ' variantes<br>' + s + ' u.</button>'
+      : '<div class="stepper"><button data-q="-1" aria-label="Restar stock">−</button><b>' + s + '</b><button data-q="1" aria-label="Sumar stock">+</button></div>') +
+    '</article>';
+}
+$('#cat-chips').addEventListener('click', (e) => { const c = e.target.closest('[data-c]'); if (c) { catFilter = c.dataset.c; renderList(); } });
+$('#stock-chips').addEventListener('click', (e) => {
+  const c = e.target.closest('[data-s]'); if (!c) return;
+  stockFilter = c.dataset.s;
+  document.querySelectorAll('#stock-chips .chip').forEach((x) => x.classList.toggle('on', x === c));
+  renderList();
+});
+$('#q').addEventListener('input', (e) => { query = e.target.value; renderList(); });
+$('#list').addEventListener('click', (e) => {
+  const step = e.target.closest('[data-q]');
+  if (step) {
+    const p = products.find((x) => x.id === step.closest('.prod').dataset.id);
+    p.stock = Math.max(0, (+p.stock || 0) + +step.dataset.q);
+    step.parentNode.querySelector('b').textContent = p.stock;
+    updateSaveState();
+    return;
+  }
+  const ed = e.target.closest('[data-edit]');
+  if (ed) openEditor(ed.dataset.edit);
+});
+
+// ---------- Product editor ----------
+const newId = () => 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+function openEditor(id) {
+  const src = id ? products.find((p) => p.id === id) : null;
+  editing = src ? JSON.parse(JSON.stringify(src)) : { id: newId(), name: '', brand: '', cat: catFilter ? [catFilter] : [], type: '', price: 0, offer: 0, stock: 1, img: '', mp: '', variants: [] };
+  editing.isNew = !src;
+  $('#sheet-title').textContent = src ? 'Editar producto' : 'Nuevo producto';
+  $('#e-del').classList.toggle('hidden', !src);
+  $('#e-name').value = editing.name; $('#e-brand').value = editing.brand || ''; $('#e-type').value = editing.type || '';
+  $('#e-price').value = editing.price || ''; $('#e-offer').value = editing.offer || 0; $('#e-mp').value = editing.mp || '';
+  $('#e-hasvar').checked = editing.variants.length > 0;
+  renderEditor();
+  $('#sheet').classList.remove('hidden'); $('#sheet-bg').classList.remove('hidden');
+  $('#sheet').scrollTop = 0;
+}
+function closeEditor() { $('#sheet').classList.add('hidden'); $('#sheet-bg').classList.add('hidden'); editing = null; }
+function renderEditor() {
+  $('#e-img').src = imgSrc(editing.img) || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg"/%3E';
+  const cats = allCats(); catsOf(editing).forEach((c) => { if (!cats.includes(c)) cats.push(c); });
+  $('#e-cats').innerHTML = cats.map((c) => '<label><input type="checkbox" value="' + esc(c) + '"' + (catsOf(editing).includes(c) ? ' checked' : '') + '> ' + esc(c) + '</label>').join('');
+  const hasVar = $('#e-hasvar').checked;
+  $('#e-novar').classList.toggle('hidden', hasVar);
+  $('#e-var').classList.toggle('hidden', !hasVar);
+  $('#e-stock').textContent = +editing.stock || 0;
+  $('#e-vlist').innerHTML = editing.variants.map((v, i) =>
+    '<div class="vrow" data-v="' + i + '">' +
+      '<label class="upl" title="Foto de la variante">' + (v.img ? '<img src="' + esc(imgSrc(v.img)) + '" alt="">' : '<span class="noimg" style="display:grid;place-items:center;font-size:18px">📷</span>') + '<input type="file" accept="image/*" data-vimg="' + i + '"></label>' +
+      '<input class="in" placeholder="Ej: Tono 02 Nude" value="' + esc(v.name) + '" data-vname="' + i + '">' +
+      '<div class="stepper"><button type="button" data-vq="-1">−</button><b>' + (+v.stock || 0) + '</b><button type="button" data-vq="1">+</button></div>' +
+      '<button class="vdel" type="button" data-vdel="' + i + '" aria-label="Borrar variante">×</button>' +
+    '</div>').join('');
+}
+$('#e-hasvar').addEventListener('change', (e) => {
+  if (e.target.checked && !editing.variants.length) editing.variants = [{ name: '', stock: +editing.stock || 0, img: '' }];
+  renderEditor();
+});
+$('#e-novar').addEventListener('click', (e) => { const b = e.target.closest('[data-st]'); if (b) { editing.stock = Math.max(0, (+editing.stock || 0) + +b.dataset.st); renderEditor(); } });
+$('#e-addvar').addEventListener('click', () => { editing.variants.push({ name: '', stock: 1, img: '' }); renderEditor(); const ins = document.querySelectorAll('[data-vname]'); ins[ins.length - 1].focus(); });
+$('#e-vlist').addEventListener('input', (e) => { const i = e.target.dataset.vname; if (i != null) editing.variants[i].name = e.target.value; });
+$('#e-vlist').addEventListener('click', (e) => {
+  const row = e.target.closest('[data-v]'); if (!row) return;
+  const v = editing.variants[+row.dataset.v];
+  const q = e.target.closest('[data-vq]');
+  if (q) { v.stock = Math.max(0, (+v.stock || 0) + +q.dataset.vq); row.querySelector('.stepper b').textContent = v.stock; }
+  if (e.target.closest('[data-vdel]')) { editing.variants.splice(+row.dataset.v, 1); renderEditor(); }
+});
+$('#e-vlist').addEventListener('change', async (e) => {
+  const i = e.target.dataset.vimg; if (i == null || !e.target.files[0]) return;
+  const path = await uploadPhoto(e.target.files[0], ($('#e-name').value || editing.name || 'producto') + '-' + (editing.variants[i].name || 'variante'));
+  if (path) { editing.variants[i].img = path; renderEditor(); }
+});
+$('#e-file').addEventListener('change', async (e) => {
+  if (!e.target.files[0]) return;
+  const path = await uploadPhoto(e.target.files[0], $('#e-name').value || editing.name || 'producto');
+  if (path) { editing.img = path; renderEditor(); }
+  e.target.value = '';
+});
+$('#e-addcat').addEventListener('click', () => {
+  const c = $('#e-newcat').value.trim(); if (!c) return;
+  editing.cat = [...new Set(catsOf(editing).concat(c))];
+  $('#e-newcat').value = ''; renderEditor();
+});
+$('#e-cats').addEventListener('change', () => {
+  editing.cat = [...document.querySelectorAll('#e-cats input:checked')].map((i) => i.value);
+});
+$('#e-ok').addEventListener('click', () => {
+  const name = $('#e-name').value.trim();
+  if (!name) return toast('Poné un nombre al producto', true);
+  const price = Math.max(0, Math.round(+$('#e-price').value || 0));
+  if (!price) return toast('Poné el precio', true);
+  const offer = Math.max(0, Math.round(+$('#e-offer').value || 0));
+  if (offer && offer >= price) return toast('La oferta tiene que ser menor al precio', true);
+  const hasVar = $('#e-hasvar').checked;
+  const variants = hasVar ? editing.variants.map((v) => ({ name: v.name.trim(), stock: +v.stock || 0, img: v.img || '' })).filter((v) => v.name) : [];
+  if (hasVar && !variants.length) return toast('Escribí el nombre de al menos una variante', true);
+  const p = {
+    id: editing.id, name, brand: $('#e-brand').value.trim(), cat: catsOf(editing), type: $('#e-type').value.trim(),
+    price, offer, stock: hasVar ? variants.reduce((a, v) => a + v.stock, 0) : +editing.stock || 0,
+    img: editing.img || '', mp: $('#e-mp').value.trim(), variants
+  };
+  const i = products.findIndex((x) => x.id === p.id);
+  if (i >= 0) products[i] = p; else products.unshift(p);
+  closeEditor(); renderList(); updateSaveState();
+  toast(i >= 0 ? 'Cambios listos. Tocá Guardar para publicarlos' : 'Producto creado. Tocá Guardar para publicarlo');
+});
+$('#e-del').addEventListener('click', () => {
+  if (!confirm('¿Eliminar "' + (editing.name || 'este producto') + '"? Se borra de la página al guardar.')) return;
+  products = products.filter((p) => p.id !== editing.id);
+  closeEditor(); renderList(); updateSaveState();
+});
+$('#new-prod').addEventListener('click', () => openEditor(null));
+$('#sheet-close').addEventListener('click', closeEditor);
+$('#sheet-bg').addEventListener('click', closeEditor);
+
+// ---------- Photo upload (resized in the phone before uploading) ----------
+async function uploadPhoto(file, name) {
+  toast('Subiendo foto…');
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 1200 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+    const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', 0.85));
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    const path = 'img/' + slug(name) + '-' + Date.now().toString(36) + '.jpg';
+    await writeFile(path, b64encode(bytes), 'Subir foto: ' + name);
+    toast('Foto subida ✓');
+    return path;
+  } catch (e) {
+    toast('No se pudo subir la foto. Probá de nuevo.', true);
+    return '';
+  }
+}
+
+// ---------- Design tab ----------
+function fillDesign() {
+  document.querySelectorAll('[data-set]').forEach((i) => { i.value = settings[i.dataset.set] != null ? settings[i.dataset.set] : ''; });
+  document.querySelectorAll('[data-badge]').forEach((i) => { i.value = (settings.badges || [])[+i.dataset.badge] || ''; });
+  settings.colors = settings.colors || { pink: '#ff5fa2', purple: '#a66bff', peach: '#ffb347' };
+  document.querySelectorAll('[data-color]').forEach((i) => { i.value = settings.colors[i.dataset.color]; });
+  $('#anim').checked = settings.animatedBackground !== false;
+  paintPreview();
+}
+function paintPreview() {
+  const c = settings.colors;
+  $('#color-preview').style.background = 'linear-gradient(90deg,' + c.pink + ',' + c.purple + ',' + c.peach + ')';
+}
+$('#tab-design').addEventListener('input', (e) => {
+  const t = e.target;
+  if (t.dataset.set) settings[t.dataset.set] = t.dataset.set === 'transferDiscount' ? Math.max(0, Math.min(90, +t.value || 0)) : t.value;
+  if (t.dataset.badge) { settings.badges = settings.badges || ['', '', '']; settings.badges[+t.dataset.badge] = t.value; }
+  if (t.dataset.color) { settings.colors[t.dataset.color] = t.value; paintPreview(); }
+  if (t.id === 'anim') settings.animatedBackground = t.checked;
+  updateSaveState();
+});
+$('#anim').addEventListener('change', (e) => { settings.animatedBackground = e.target.checked; updateSaveState(); });
+function renderCatOrder() {
+  const order = allCats();
+  settings.categoryOrder = settings.categoryOrder || [];
+  $('#cat-order').innerHTML = order.map((c, i) => '<li>' + esc(c) + '<span><button data-mv="-1" data-i="' + i + '" aria-label="Subir">↑</button><button data-mv="1" data-i="' + i + '" aria-label="Bajar">↓</button></span></li>').join('');
+}
+$('#cat-order').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-mv]'); if (!b) return;
+  const order = allCats(), i = +b.dataset.i, j = i + +b.dataset.mv;
+  if (j < 0 || j >= order.length) return;
+  [order[i], order[j]] = [order[j], order[i]];
+  settings.categoryOrder = order;
+  renderCatOrder(); updateSaveState();
+});
+</script>
+</body>
+</html>
