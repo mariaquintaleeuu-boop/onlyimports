@@ -5,15 +5,16 @@
  "heroText": "Elegí tus productos, armá tu pedido y mandalo por WhatsApp en segundos.",
  "badges": [
   "100% originales",
-  "5% off con transferencia",
-  "Envíos a todo el país"
+  "Envío gratis en compras desde $100.000",
+  "Entregas al día siguiente · lun a sáb de 9 a 18 hs",
+  "5% off con transferencia"
  ],
  "whatsapp": "5491158252255",
  "phoneLabel": "011 5825-2255",
  "email": "mariaquintaleeuu@gmail.com",
  "place": "Avellaneda, Buenos Aires",
  "instagram": "https://instagram.com/ONLY_IMPORTSARG",
- "tiktok": "https://tiktok.com/@ONLYIMPORTS2",
+ "tiktok": "https://www.tiktok.com/@onlyimports2",
  "transferDiscount": 5,
  "colors": {
   "pink": "#ff5fa2",
@@ -40,5 +41,6 @@
    -34.6625,
    -58.3653
   ]
- }
+ },
+ "freeShippingFrom": 100000
 }

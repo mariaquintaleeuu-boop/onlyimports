@@ -199,6 +199,7 @@ textarea.in{resize:vertical;min-height:70px}
       <label class="f"><span>Etiqueta 1</span><input class="in" data-badge="0"></label>
       <label class="f"><span>Etiqueta 2</span><input class="in" data-badge="1"></label>
       <label class="f"><span>Etiqueta 3</span><input class="in" data-badge="2"></label>
+      <label class="f"><span>Etiqueta 4</span><input class="in" data-badge="3"></label>
     </div>
     <div class="card">
       <h2>Colores</h2>
@@ -223,6 +224,7 @@ textarea.in{resize:vertical;min-height:70px}
     <div class="card">
       <h2>Precios de envío a domicilio</h2>
       <p style="font-size:13px;color:var(--muted);margin:-6px 0 12px">CABA se calcula por distancia desde Avellaneda. Más de 25 km o fuera de estas zonas: Correo Argentino a cotizar.</p>
+      <label class="f"><span>Envío gratis en compras desde $ (0 = nunca)</span><input class="in" type="number" min="0" inputmode="numeric" data-set="freeShippingFrom"></label>
       <label class="f"><span>Avellaneda $</span><input class="in" type="number" min="0" inputmode="numeric" data-ship="avellaneda"></label>
       <label class="f"><span>Lanús $</span><input class="in" type="number" min="0" inputmode="numeric" data-ship="lanus"></label>
       <label class="f"><span>CABA hasta 15 km $</span><input class="in" type="number" min="0" inputmode="numeric" data-ship="caba15"></label>
@@ -629,8 +631,8 @@ function paintPreview() {
 }
 $('#tab-design').addEventListener('input', (e) => {
   const t = e.target;
-  if (t.dataset.set) settings[t.dataset.set] = t.dataset.set === 'transferDiscount' ? Math.max(0, Math.min(90, +t.value || 0)) : t.value;
-  if (t.dataset.badge) { settings.badges = settings.badges || ['', '', '']; settings.badges[+t.dataset.badge] = t.value; }
+  if (t.dataset.set) settings[t.dataset.set] = t.dataset.set === 'transferDiscount' ? Math.max(0, Math.min(90, +t.value || 0)) : t.dataset.set === 'freeShippingFrom' ? Math.max(0, Math.round(+t.value || 0)) : t.value;
+  if (t.dataset.badge) { settings.badges = settings.badges || ['', '', '', '']; settings.badges[+t.dataset.badge] = t.value; }
   if (t.dataset.color) { settings.colors[t.dataset.color] = t.value; paintPreview(); }
   if (t.id === 'anim') settings.animatedBackground = t.checked;
   if (t.dataset.ship) settings.shipping[t.dataset.ship] = Math.max(0, Math.round(+t.value || 0));

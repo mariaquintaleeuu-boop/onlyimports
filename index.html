@@ -343,7 +343,7 @@ footer a:hover{color:#c2367a}
     <div class="steps">
       <div class="step"><b>1</b><h3>Elegí</h3><p>Agregá a tu pedido los productos que te gusten.</p></div>
       <div class="step"><b>2</b><h3>Enviá tu pedido</h3><p>Tocá "Enviar pedido por WhatsApp" y nos llega tu lista con el total.</p></div>
-      <div class="step"><b>3</b><h3>Pagá y recibí</h3><p>Transferencia o Mercado Pago. Coordinamos el envío o retiro.</p></div>
+      <div class="step"><b>3</b><h3>Pagá y recibí</h3><p>Transferencia o Mercado Pago. Entregamos de lunes a sábado, al día siguiente, de 9 a 18 hs. Envío gratis en compras desde $100.000.</p></div>
     </div>
   </section>
 </main>
@@ -384,6 +384,7 @@ footer a:hover{color:#c2367a}
       <p class="map-hint">Revisá que el pin esté en tu casa. Podés moverlo o tocar el mapa.</p>
       <div class="map" id="map"><p class="map-loading">Cargando mapa…</p></div>
       <p class="zone-msg hidden" id="zone-msg"></p>
+      <p class="map-hint" style="margin-top:10px">🚚 Entregamos de lunes a sábado, al día siguiente de la compra, de 9 a 18 hs.</p>
       <label class="fld" style="margin-top:12px"><span>Piso / depto / entre calles (opcional)</span><input id="c-extra" placeholder="Ej: 3° B, timbre 2"></label>
     </div>
     <div id="correo-fields" class="hidden">
@@ -768,6 +769,9 @@ function start(STORE, PRODUCTS) {
     return 2 * R * Math.asin(Math.sqrt(h));
   }
   // Returns { price, label } for own delivery, or null when it has to go by Correo Argentino.
+  const FREE_FROM = +(STORE.freeShippingFrom || 100000); // free own delivery above this subtotal
+  const subtotal = () => activeLines().reduce((a, { q, it }) => a + finalPrice(it.p) * q, 0);
+  const isFree = () => FREE_FROM > 0 && subtotal() >= FREE_FROM;
   function motoPrice() {
     if (!zone || !pinPos) return null;
     if (zone === 'Avellaneda') return { price: +SHIP.avellaneda, label: 'Avellaneda' };
@@ -783,7 +787,11 @@ function start(STORE, PRODUCTS) {
     if (!pinPos) { m.classList.add('hidden'); return; }
     m.classList.remove('hidden');
     const mp = motoPrice();
-    if (mp) { m.className = 'zone-msg ok'; m.textContent = '✓ Envío a ' + mp.label + ': ' + money.format(mp.price); }
+    if (mp) {
+      m.className = 'zone-msg ok';
+      m.textContent = isFree() ? '✓ Envío a ' + mp.label + ': ¡GRATIS! (compra de más de ' + money.format(FREE_FROM) + ')'
+        : '✓ Envío a ' + mp.label + ': ' + money.format(mp.price) + ' · Te faltan ' + money.format(FREE_FROM - subtotal()) + ' para envío gratis';
+    }
     else { m.className = 'zone-msg bad'; m.textContent = 'Tu dirección está fuera de nuestra zona de envío: te lo mandamos por Correo Argentino (a cotizar).'; }
     updateTotals();
   }
@@ -836,7 +844,7 @@ function start(STORE, PRODUCTS) {
     $('#ship-quote').textContent = 'Envío por Correo Argentino: a cotizar. Te pasamos el costo por WhatsApp' + (cpValid() ? ' (CP ' + $('#c-cp').value.trim() + ').' : '.');
   }
   $('#c-cp').addEventListener('input', quoteCorreo);
-  const shippingCost = () => { if (step !== 'checkout' || delivery() !== 'moto') return 0; const mp = motoPrice(); return mp ? mp.price : 0; };
+  const shippingCost = () => { if (step !== 'checkout' || delivery() !== 'moto' || isFree()) return 0; const mp = motoPrice(); return mp ? mp.price : 0; };
 
   // Map (OpenStreetMap + Leaflet, loaded only when needed)
   function loadLeaflet() {
@@ -930,8 +938,8 @@ function start(STORE, PRODUCTS) {
     let msg = '¡Hola! Quiero hacer este pedido en Only Imports:\n\n' + lines.join('\n') +
       '\n\nSubtotal: ' + money.format(total);
     if (d === 'correo') msg += '\nEnvío Correo Argentino: a cotizar';
-    if (d === 'moto') { const mp = motoPrice(); msg += '\nEnvío a domicilio' + (mp ? ' (' + mp.label + '): ' + money.format(mp.price) : ': a cotizar'); }
-    msg += '\n*Total: ' + money.format(total + ship) + (ship || d === 'retiro' ? '' : ' + envío') + '*' +
+    if (d === 'moto') { const mp = motoPrice(); msg += '\nEnvío a domicilio' + (mp ? ' (' + mp.label + '): ' + (isFree() ? 'GRATIS' : money.format(mp.price)) : ': a cotizar'); }
+    msg += '\n*Total: ' + money.format(total + ship) + (ship || d === 'retiro' || (d === 'moto' && motoPrice()) ? '' : ' + envío') + '*' +
       '\nCon transferencia: ' + money.format(transfer(total) + ship) +
       '\n\n*Nombre:* ' + $('#c-name').value.trim();
     if (d === 'moto') {
@@ -941,7 +949,8 @@ function start(STORE, PRODUCTS) {
     } else if (d === 'correo') {
       msg += '\n*Entrega:* Correo Argentino\n*Código postal:* ' + $('#c-cp').value.trim() + '\n*Localidad:* ' + $('#c-city').value.trim() +
         '\n*Dirección:* ' + $('#c-address2').value.trim();
-    } else msg += '\n*Entrega:* Retiro en persona';
+    } else msg += '\n*Entrega:* Retiro en persona (Avellaneda, Zona Sur)';
+    if (d === 'moto') msg += '\n(Entregas de lunes a sábado, al día siguiente, de 9 a 18 hs)';
     if ($('#c-notes').value.trim()) msg += '\n*Notas:* ' + $('#c-notes').value.trim();
     return msg;
   }
