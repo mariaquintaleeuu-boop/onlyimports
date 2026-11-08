@@ -191,6 +191,11 @@ footer a:hover{color:#c2367a}
 .pm-info h2{margin:0 0 10px;font:600 24px/1.2 Fredoka,sans-serif}
 .pm-info .brand,.pm-info .price,.pm-info .transfer{text-align:left;margin-left:0}
 .pm-info .price{font-size:24px}
+.pm-ml{display:inline-flex;align-items:center;gap:7px;background:#ffe600;color:#2d3277;font-weight:700;font-size:12.5px;padding:5px 12px 5px 5px;border-radius:999px;text-decoration:none;margin:0 0 10px;box-shadow:0 2px 0 #e3cb00;transition:transform .15s,box-shadow .15s}
+.pm-ml i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#2d3277;color:#ffe600}
+.pm-ml b{font-size:11px;opacity:.7}
+.pm-ml:hover{transform:translateY(-1px);box-shadow:0 3px 0 #e3cb00}
+.pm-ml.hidden{display:none}
 .pm-var span{display:block;font-size:13px;font-weight:600;margin:6px 0}
 .pm-actions{display:grid;gap:10px;margin:14px 0}
 .pm-actions .btn{width:100%;font-size:16px}
@@ -411,6 +416,7 @@ footer a:hover{color:#c2367a}
     <button class="close pm-x" id="pm-close" aria-label="Cerrar">×</button>
     <div class="pm-media"><div class="pm-gallery" id="pm-gallery"></div><div class="pm-thumbs" id="pm-thumbs"></div></div>
     <div class="pm-info">
+      <a class="pm-ml hidden" id="pm-ml" href="#" target="_blank" rel="noopener"><i aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></i>Ver en Mercado Libre<b aria-hidden="true">↗</b></a>
       <p class="brand" id="pm-brand"></p>
       <h2 id="pm-name"></h2>
       <p class="price" id="pm-price"></p>
@@ -634,6 +640,7 @@ function start(STORE, PRODUCTS) {
     $('#pm-name').textContent = p.name;
     $('#pm-price').innerHTML = (fp < p.price ? '<s>' + money.format(p.price) + '</s>' : '') + money.format(fp);
     $('#pm-transfer').innerHTML = '<b>' + money.format(transfer(fp)) + '</b> con transferencia';
+    setMl(p, p.variants[firstV]);
     $('#pm-desc').textContent = p.desc || '';
     $('#pm-desc').classList.toggle('hidden', !p.desc);
     $('#pm-var').innerHTML = !out && p.variants.length ? '<span>Elegí una opción</span><select class="variant" id="pm-vsel">' +
@@ -643,6 +650,10 @@ function start(STORE, PRODUCTS) {
     $('#pm').classList.remove('hidden');
     document.body.classList.add('pm-open');
     $('#pm-gallery').scrollLeft = 0;
+  }
+  function setMl(p, v) {
+    const url = (v && v.ml) || p.ml || '';
+    const a = $('#pm-ml'); a.classList.toggle('hidden', !url); if (url) a.href = url;
   }
   function closeProduct() { $('#pm').classList.add('hidden'); document.body.classList.remove('pm-open'); pmId = null; }
   const pmVariant = () => { const s = $('#pm-vsel'); return s ? +s.value : -1; };
@@ -654,6 +665,7 @@ function start(STORE, PRODUCTS) {
   });
   $('#pm-var').addEventListener('change', () => {
     const p = byId[pmId], v = p.variants[pmVariant()];
+    setMl(p, v);
     if (v && v.img) { const g = $('#pm-gallery'); g.firstElementChild.src = imgUrl(v); g.scrollTo({ left: 0 }); }
   });
   $('#pm-add').addEventListener('click', () => { addToCart(pmId, pmVariant()); });
@@ -761,13 +773,27 @@ function start(STORE, PRODUCTS) {
     return street ? street + (place ? ', ' + place : '') : (display || '').split(',').slice(0, 3).join(',');
   }
   // Own delivery prices (editable in the admin panel). CABA depends on the distance from the store.
-  const SHIP = Object.assign({ avellaneda: 4990, lanus: 5990, caba15: 6990, caba25: 8990, origin: [-34.6625, -58.3653] }, STORE.shipping || {});
+  const SHIP = Object.assign({ avellaneda: 4990, lanus: 5990, caba15: 6990, caba20: 7990, caba25: 8990 }, STORE.shipping || {});
+  SHIP.origin = [-34.6789568, -58.3643841]; // Eva Duarte de Perón 1343, Sarandí
   function distanceKm(a, b) {
     const R = 6371, rad = (x) => x * Math.PI / 180;
     const dLat = rad(b[0] - a[0]), dLng = rad(b[1] - a[1]);
     const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a[0])) * Math.cos(rad(b[0])) * Math.sin(dLng / 2) ** 2;
     return 2 * R * Math.asin(Math.sqrt(h));
   }
+  // Driving distance from the store (OSRM). Until it arrives (or if it fails) we use the straight line.
+  let road = { key: '', km: null };
+  const pinKey = () => pinPos ? pinPos[0].toFixed(5) + ',' + pinPos[1].toFixed(5) : '';
+  function routeKm() {
+    const key = pinKey();
+    if (road.key === key) return;
+    road = { key, km: null };
+    fetch('https://router.project-osrm.org/route/v1/driving/' + SHIP.origin[1] + ',' + SHIP.origin[0] + ';' + pinPos[1] + ',' + pinPos[0] + '?overview=false')
+      .then((r) => r.json())
+      .then((j) => { if (road.key === key && j.routes && j.routes[0]) { road.km = j.routes[0].distance / 1000; showZone(); } })
+      .catch(() => {});
+  }
+  const cabaKm = () => (road.key === pinKey() && road.km != null) ? road.km : distanceKm(SHIP.origin, pinPos);
   // Returns { price, label } for own delivery, or null when it has to go by Correo Argentino.
   const FREE_FROM = +(STORE.freeShippingFrom || 100000); // free own delivery above this subtotal
   const subtotal = () => activeLines().reduce((a, { q, it }) => a + finalPrice(it.p) * q, 0);
@@ -776,9 +802,10 @@ function start(STORE, PRODUCTS) {
     if (!zone || !pinPos) return null;
     if (zone === 'Avellaneda') return { price: +SHIP.avellaneda, label: 'Avellaneda' };
     if (zone === 'Lanús') return { price: +SHIP.lanus, label: 'Lanús' };
-    const km = distanceKm(SHIP.origin, pinPos);
-    if (km <= 15) return { price: +SHIP.caba15, label: 'CABA (hasta 15 km)' };
-    if (km <= 25) return { price: +SHIP.caba25, label: 'CABA (15 a 25 km)' };
+    const km = cabaKm(), label = 'CABA (' + km.toFixed(1).replace('.', ',') + ' km)';
+    if (km <= 15) return { price: +SHIP.caba15, label };
+    if (km <= 20) return { price: +SHIP.caba20, label };
+    if (km <= 25) return { price: +SHIP.caba25, label };
     return null;
   }
   $('#moto-prices').textContent = 'Avellaneda ' + money.format(SHIP.avellaneda) + ' · Lanús ' + money.format(SHIP.lanus) + ' · CABA desde ' + money.format(SHIP.caba15);
@@ -786,6 +813,7 @@ function start(STORE, PRODUCTS) {
     const m = $('#zone-msg');
     if (!pinPos) { m.classList.add('hidden'); return; }
     m.classList.remove('hidden');
+    if (zone && zone !== 'Avellaneda' && zone !== 'Lanús') routeKm();
     const mp = motoPrice();
     if (mp) {
       m.className = 'zone-msg ok';

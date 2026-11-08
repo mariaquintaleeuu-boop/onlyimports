@@ -228,7 +228,8 @@ textarea.in{resize:vertical;min-height:70px}
       <label class="f"><span>Avellaneda $</span><input class="in" type="number" min="0" inputmode="numeric" data-ship="avellaneda"></label>
       <label class="f"><span>Lanús $</span><input class="in" type="number" min="0" inputmode="numeric" data-ship="lanus"></label>
       <label class="f"><span>CABA hasta 15 km $</span><input class="in" type="number" min="0" inputmode="numeric" data-ship="caba15"></label>
-      <label class="f"><span>CABA de 15 a 25 km $</span><input class="in" type="number" min="0" inputmode="numeric" data-ship="caba25"></label>
+      <label class="f"><span>CABA de 15 a 20 km $</span><input class="in" type="number" min="0" inputmode="numeric" data-ship="caba20"></label>
+      <label class="f"><span>CABA de 20 a 25 km $</span><input class="in" type="number" min="0" inputmode="numeric" data-ship="caba25"></label>
     </div>
     <div class="card order">
       <h2>Orden de las categorías</h2>
@@ -284,6 +285,7 @@ textarea.in{resize:vertical;min-height:70px}
   </div>
 
   <label class="f"><span>Descripción (opcional)</span><textarea class="in" id="e-desc" rows="4" placeholder="Para qué sirve, tamaño, cómo se usa..."></textarea></label>
+  <label class="f"><span>Link de Mercado Libre (opcional · muestra el botón amarillo)</span><input class="in" id="e-ml" type="url" placeholder="https://www.mercadolibre.com.ar/..."></label>
   <label class="f"><span>Link de pago de Mercado Pago (opcional)</span><input class="in" id="e-mp" type="url" placeholder="https://mpago.la/..."></label>
 
   <div class="sheet-actions">
@@ -498,7 +500,7 @@ function openEditor(id) {
   $('#sheet-title').textContent = src ? 'Editar producto' : 'Nuevo producto';
   $('#e-del').classList.toggle('hidden', !src);
   $('#e-name').value = editing.name; $('#e-brand').value = editing.brand || ''; $('#e-type').value = editing.type || '';
-  $('#e-price').value = editing.price || ''; $('#e-offer').value = editing.offer || 0; $('#e-mp').value = editing.mp || '';
+  $('#e-price').value = editing.price || ''; $('#e-offer').value = editing.offer || 0; $('#e-mp').value = editing.mp || ''; $('#e-ml').value = editing.ml || '';
   editing.images = editing.images || []; $('#e-desc').value = editing.desc || '';
   $('#e-hasvar').checked = editing.variants.length > 0;
   renderEditor();
@@ -571,12 +573,12 @@ $('#e-ok').addEventListener('click', () => {
   const offer = Math.max(0, Math.round(+$('#e-offer').value || 0));
   if (offer && offer >= price) return toast('La oferta tiene que ser menor al precio', true);
   const hasVar = $('#e-hasvar').checked;
-  const variants = hasVar ? editing.variants.map((v) => ({ name: v.name.trim(), stock: +v.stock || 0, img: v.img || '' })).filter((v) => v.name) : [];
+  const variants = hasVar ? editing.variants.map((v) => Object.assign({ name: v.name.trim(), stock: +v.stock || 0, img: v.img || '' }, v.ml ? { ml: v.ml } : {})).filter((v) => v.name) : [];
   if (hasVar && !variants.length) return toast('Escribí el nombre de al menos una variante', true);
   const p = {
     id: editing.id, name, brand: $('#e-brand').value.trim(), cat: catsOf(editing), type: $('#e-type').value.trim(),
     price, offer, stock: hasVar ? variants.reduce((a, v) => a + v.stock, 0) : +editing.stock || 0,
-    img: editing.img || '', images: editing.images || [], desc: $('#e-desc').value.trim(), mp: $('#e-mp').value.trim(), variants
+    img: editing.img || '', images: editing.images || [], desc: $('#e-desc').value.trim(), mp: $('#e-mp').value.trim(), ml: $('#e-ml').value.trim(), variants
   };
   const i = products.findIndex((x) => x.id === p.id);
   if (i >= 0) products[i] = p; else products.unshift(p);
@@ -621,7 +623,7 @@ function fillDesign() {
   settings.colors = settings.colors || { pink: '#ff5fa2', purple: '#a66bff', peach: '#ffb347' };
   document.querySelectorAll('[data-color]').forEach((i) => { i.value = settings.colors[i.dataset.color]; });
   $('#anim').checked = settings.animatedBackground !== false;
-  settings.shipping = Object.assign({ avellaneda: 4990, lanus: 5990, caba15: 6990, caba25: 8990 }, settings.shipping || {});
+  settings.shipping = Object.assign({ avellaneda: 4990, lanus: 5990, caba15: 6990, caba20: 7990, caba25: 8990 }, settings.shipping || {});
   document.querySelectorAll('[data-ship]').forEach((i) => { i.value = settings.shipping[i.dataset.ship]; });
   paintPreview();
 }
