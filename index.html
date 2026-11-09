@@ -115,6 +115,7 @@ a{color:inherit}
 .add{border:0;border-radius:14px;padding:11px;font-weight:700;color:#fff;background:var(--ink);transition:background .2s,transform .2s}
 .add:hover{background:#c2367a}
 .add:active{transform:scale(.97)}
+.ml-mini{display:block;text-align:center;border-radius:14px;padding:8px;font-size:12.5px;font-weight:700;text-decoration:none;color:#2d3277;background:#ffe600;box-shadow:0 2px 0 #e3cb00}
 .mp{display:block;text-align:center;border-radius:14px;padding:9px;font-size:13px;font-weight:700;text-decoration:none;color:#0a5fbf;background:#e6f2ff}
 .card.out .media{filter:grayscale(1);opacity:.55}
 .out-label{position:absolute;top:calc(12px + 35%);left:50%;transform:translate(-50%,-50%);background:#3a2347d9;color:#fff;font-weight:700;letter-spacing:.1em;font-size:13px;padding:8px 14px;border-radius:99px;z-index:1}
@@ -122,6 +123,21 @@ a{color:inherit}
 .empty{text-align:center;color:var(--muted);padding:30px 0}
 
 /* ---------- How it works ---------- */
+.ask{padding:clamp(40px,6vw,70px) 0 0}
+.ask-box{display:grid;gap:22px;background:#fff;border-radius:28px;padding:clamp(20px,4vw,40px);box-shadow:0 20px 50px -30px #a66bff}
+@media(min-width:900px){.ask-box{grid-template-columns:1fr 1.4fr;align-items:center}}
+.ask-intro p{color:var(--muted);margin-top:8px}
+#ask-form{display:grid;gap:12px}
+.ask-row{display:grid;gap:12px}
+@media(min-width:600px){.ask-row{grid-template-columns:1fr 1fr}}
+#ask-form label span{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+#ask-form input{width:100%;box-sizing:border-box;border:1.5px solid #ead9f5;border-radius:14px;padding:12px 14px;font:inherit;font-size:16px;background:#fdf9ff}
+#ask-form input:focus{outline:none;border-color:#c77dff}
+#ask-form .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.btn-grad{border:0;border-radius:999px;padding:14px;font-weight:700;font-size:16px;color:#fff;background:linear-gradient(90deg,#ff5fa2,#a66bff);cursor:pointer}
+.btn-grad:disabled{opacity:.6}
+.ask-msg{font-size:14px;font-weight:600;min-height:1em}
+.ask-msg.ok{color:#1a9a55}.ask-msg.bad{color:#d33}
 .how{padding:clamp(56px,8vw,90px) 0}
 .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
 .step{background:var(--card);border-radius:var(--radius);padding:24px;text-align:center;box-shadow:0 14px 34px -20px #a66bff8c}
@@ -343,7 +359,30 @@ footer a:hover{color:#c2367a}
       <p class="status"><span id="status"></span> <button class="clear" id="clear" hidden>Limpiar filtros ×</button></p>
     </div>
     <div class="grid" id="grid"><p class="empty">Cargando productos…</p></div>
-    <p class="empty" id="empty" hidden>No encontramos productos con esa búsqueda.</p>
+    <p class="empty" id="empty" hidden>No encontramos productos con esa búsqueda. <a href="#pedinos" id="empty-ask">¿Querés que lo traigamos? Pedilo acá</a></p>
+  </section>
+
+  <section id="pedinos" class="wrap ask">
+    <div class="ask-box">
+      <div class="ask-intro">
+        <h2 class="section-title grad">¿No encontrás lo que buscás?</h2>
+        <p>Contanos qué producto querés que traigamos. Leemos todas las sugerencias y las más pedidas son las próximas en llegar ✦</p>
+      </div>
+      <form id="ask-form" autocomplete="on" novalidate>
+        <div class="ask-row">
+          <label><span>Marca *</span><input id="s-brand" maxlength="60" placeholder="Ej: NYX, e.l.f., Rare Beauty" required></label>
+          <label><span>Producto *</span><input id="s-product" maxlength="120" placeholder="Ej: Butter Gloss, base Halo Glow" required></label>
+        </div>
+        <label><span>Tono o detalles</span><input id="s-details" maxlength="300" placeholder="Ej: tono Tiramisu, para piel grasa, 30 ml…"></label>
+        <div class="ask-row">
+          <label><span>Tu nombre (opcional)</span><input id="s-name" maxlength="60" autocomplete="given-name"></label>
+          <label><span>WhatsApp para avisarte (opcional)</span><input id="s-contact" maxlength="40" inputmode="tel" autocomplete="tel" placeholder="Ej: 11 5555-5555"></label>
+        </div>
+        <input class="hp" id="s-website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="btn-grad" type="submit" id="s-send">Enviar sugerencia</button>
+        <p class="ask-msg" id="ask-msg" role="status"></p>
+      </form>
+    </div>
   </section>
 
   <section id="como-comprar" class="how wrap">
@@ -549,6 +588,7 @@ function start(STORE, PRODUCTS) {
     if (sel && sel.scrollIntoView && matchMedia('(max-width:720px)').matches) sel.scrollIntoView({ block: 'nearest', inline: 'center' });
   }
 
+  const cardMl = (p, i) => (p.variants[i] && p.variants[i].ml) || p.ml || '';
   function cardHTML(p) {
     const out = stockOf(p) <= 0;
     const firstV = p.variants.findIndex((v) => +v.stock > 0);
@@ -571,6 +611,7 @@ function start(STORE, PRODUCTS) {
           ? '<button class="add" data-ask="' + esc(p.id) + '">Consultar ingreso</button>'
           : '<button class="add" data-add="' + esc(p.id) + '">Agregar al pedido</button>' +
             (p.mp ? '<a class="mp" href="' + esc(p.mp) + '" target="_blank" rel="noopener">Pagar con Mercado Pago</a>' : '')) +
+        (cardMl(p, firstV) ? '<a class="ml-mini" data-ml="' + esc(p.id) + '" href="' + esc(cardMl(p, firstV)) + '" target="_blank" rel="noopener">Comprar en Mercado Libre ↗</a>' : '') +
       '</div></article>';
   }
 
@@ -615,6 +656,8 @@ function start(STORE, PRODUCTS) {
   $('#grid').addEventListener('click', (e) => {
     const op = e.target.closest('[data-open]');
     if (op) return openProduct(op.dataset.open);
+    const mlLink = e.target.closest('[data-ml]');
+    if (mlLink) return track('ml', mlLink.dataset.ml);
     const add = e.target.closest('[data-add]');
     const ask = e.target.closest('[data-ask]');
     if (add) {
@@ -628,6 +671,7 @@ function start(STORE, PRODUCTS) {
     const sel = e.target.closest('.variant'); if (!sel) return;
     const p = byId[sel.dataset.vfor], v = p.variants[+sel.value];
     sel.closest('.card').querySelector('.media img').src = imgUrl(v && v.img ? v : p);
+    const ml = sel.closest('.card').querySelector('.ml-mini'); if (ml && cardMl(p, +sel.value)) ml.href = cardMl(p, +sel.value);
   });
 
   // ---------- Anonymous statistics (visits, clicks, time on page). Admin visits are not counted. ----------
@@ -675,6 +719,27 @@ function start(STORE, PRODUCTS) {
     const body = JSON.stringify(o);
     post(STORE.statsUrl + '/order', body);
   };
+
+  // ---------- "Pedinos un producto" (suggestions) ----------
+  $('#empty-ask').addEventListener('click', () => { if (!$('#s-product').value) $('#s-product').value = state.q.trim(); setTimeout(() => $('#s-brand').focus(), 400); });
+  $('#ask-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = $('#ask-msg'), btn = $('#s-send');
+    const data = { brand: $('#s-brand').value.trim(), product: $('#s-product').value.trim(), details: $('#s-details').value.trim(),
+      name: $('#s-name').value.trim(), contact: $('#s-contact').value.trim(), website: $('#s-website').value };
+    if (!data.brand || !data.product) { msg.className = 'ask-msg bad'; msg.textContent = 'Completá la marca y el producto.'; (data.brand ? $('#s-product') : $('#s-brand')).focus(); return; }
+    if (!STORE.statsUrl) { msg.className = 'ask-msg bad'; msg.textContent = 'No se pudo enviar. Escribinos por WhatsApp.'; return; }
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    try {
+      const r = await fetch(STORE.statsUrl + '/suggest', { method: 'POST', body: JSON.stringify(data) });
+      if (!r.ok) throw new Error(r.status);
+      msg.className = 'ask-msg ok'; msg.textContent = '¡Gracias! Recibimos tu sugerencia 💖';
+      ['#s-brand', '#s-product', '#s-details'].forEach((k) => { $(k).value = ''; });
+    } catch (err) {
+      msg.className = 'ask-msg bad'; msg.textContent = 'No se pudo enviar. Probá de nuevo o escribinos por WhatsApp.';
+    }
+    btn.disabled = false; btn.textContent = 'Enviar sugerencia';
+  });
 
   // ---------- Product detail (photos, description, buy now) ----------
   let pmId = null;

@@ -9,6 +9,7 @@ const TYPES = ['view', 'engage', 'products', 'time', 'open', 'add', 'buy_now', '
 const SCHEMA = [
   'CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY, ts INTEGER, day TEXT, vid TEXT, sid TEXT, type TEXT, pid TEXT, val REAL)',
   'CREATE INDEX IF NOT EXISTS ev_day ON events (day, type)',
+  'CREATE TABLE IF NOT EXISTS suggestions (id INTEGER PRIMARY KEY, ts INTEGER, brand TEXT, product TEXT, details TEXT, name TEXT, contact TEXT, status TEXT DEFAULT \'nueva\')',
   'CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, ts INTEGER, name TEXT, items TEXT, total INTEGER, delivery TEXT, source TEXT, status TEXT DEFAULT \'pendiente\')',
 ];
 let ready = false;
@@ -110,6 +111,18 @@ export default {
           .bind(str(o.id, 12), Date.now(), str(o.name, 80), JSON.stringify(items), Math.max(0, Math.round(+o.total || 0)), str(o.delivery, 80), str(o.source, 20)).run();
         return json(req, { ok: true });
       }
+      // ---- public: product suggestion ("traigan este producto") ----
+      if (req.method === 'POST' && url.pathname === '/suggest') {
+        const b = JSON.parse(await req.text());
+        if (b.website) return json(req, { ok: true }); // honeypot: bots fill every field
+        const brand = str(b.brand, 60).trim(), product = str(b.product, 120).trim();
+        if (!brand || !product) return json(req, { error: 'missing' }, 400);
+        const recent = await db.prepare('SELECT COUNT(*) n FROM suggestions WHERE ts > ?').bind(Date.now() - 3600e3).first();
+        if (recent.n > 200) return json(req, { error: 'busy' }, 429);
+        await db.prepare('INSERT INTO suggestions (ts, brand, product, details, name, contact) VALUES (?, ?, ?, ?, ?, ?)')
+          .bind(Date.now(), brand, product, str(b.details, 300).trim(), str(b.name, 60).trim(), str(b.contact, 40).trim()).run();
+        return json(req, { ok: true });
+      }
       // ---- admin ----
       if (!(await isAdmin(req))) return json(req, { error: 'unauthorized' }, 401);
       if (req.method === 'GET' && url.pathname === '/stats') {
@@ -119,6 +132,18 @@ export default {
       if (req.method === 'GET' && url.pathname === '/orders') {
         const r = await db.prepare('SELECT * FROM orders ORDER BY ts DESC LIMIT 200').all();
         return json(req, r.results.map((o) => ({ ...o, items: JSON.parse(o.items || '[]') })));
+      }
+      if (req.method === 'GET' && url.pathname === '/suggestions') {
+        const r = await db.prepare('SELECT * FROM suggestions ORDER BY ts DESC LIMIT 300').all();
+        return json(req, r.results);
+      }
+      const sg = url.pathname.match(/^\/suggestions\/(\d+)$/);
+      if (req.method === 'POST' && sg) {
+        const { status } = await req.json();
+        if (status === 'borrar') await db.prepare('DELETE FROM suggestions WHERE id = ?').bind(+sg[1]).run();
+        else if (['nueva', 'vista', 'traido'].includes(status)) await db.prepare('UPDATE suggestions SET status = ? WHERE id = ?').bind(status, +sg[1]).run();
+        else return json(req, { error: 'bad status' }, 400);
+        return json(req, { ok: true });
       }
       const m = url.pathname.match(/^\/orders\/([\w-]+)$/);
       if (req.method === 'POST' && m) {

@@ -49,8 +49,9 @@ textarea.in{resize:vertical;min-height:70px}
 .brandmark{display:flex;align-items:center;gap:8px;font:700 19px Fredoka,sans-serif}
 .brandmark svg{width:32px;height:32px}
 .top a,.logout{font-size:13px;font-weight:600;color:var(--muted);background:none;border:0;text-decoration:none}
-.tabs{display:flex;gap:6px;padding:0 0 10px}
-.tab{flex:1;border:0;border-radius:12px;padding:10px 4px;font-size:13px;font-weight:700;background:var(--soft);color:var(--muted)}
+.tabs{display:flex;gap:6px;padding:0 0 10px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1 0 auto;border:0;border-radius:12px;padding:10px 12px;font-size:13px;white-space:nowrap;font-weight:700;background:var(--soft);color:var(--muted)}
 .tab.on{background:var(--ink);color:#fff}
 
 /* Save bar */
@@ -205,6 +206,7 @@ textarea.in{resize:vertical;min-height:70px}
       <button class="tab on" data-tab="products">Productos</button>
       <button class="tab" data-tab="stats">Estadísticas</button>
       <button class="tab" data-tab="orders">Pedidos</button>
+      <button class="tab" data-tab="ideas">Sugerencias</button>
       <button class="tab" data-tab="design">Diseño</button>
     </div>
   </header>
@@ -246,6 +248,17 @@ textarea.in{resize:vertical;min-height:70px}
       <button class="chip" data-o="all">Todos</button>
     </div>
     <div id="orders"><p class="empty">Cargando…</p></div>
+  </main>
+
+  <!-- Suggestions tab -->
+  <main class="wrap hidden" id="tab-ideas">
+    <p class="hint-top">Productos que piden las clientas desde la página ("¿No encontrás lo que buscás?"). Arriba, los más pedidos.</p>
+    <div class="chips" id="idea-chips">
+      <button class="chip on" data-i="open">Por revisar</button>
+      <button class="chip" data-i="traido">Ya los traje</button>
+      <button class="chip" data-i="all">Todas</button>
+    </div>
+    <div id="ideas"><p class="empty">Cargando…</p></div>
   </main>
 
   <!-- Design tab -->
@@ -452,10 +465,11 @@ if (storedToken) login(storedToken);
 // ---------- Tabs ----------
 document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x === b));
-  ['products', 'stats', 'orders', 'design'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', b.dataset.tab !== t));
+  ['products', 'stats', 'orders', 'ideas', 'design'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', b.dataset.tab !== t));
   if (b.dataset.tab === 'design') renderCatOrder();
   if (b.dataset.tab === 'stats') loadStats();
   if (b.dataset.tab === 'orders') loadOrders();
+  if (b.dataset.tab === 'ideas') loadIdeas();
 }));
 
 // ---------- Save ----------
@@ -467,20 +481,48 @@ function updateSaveState() {
   st.classList.toggle('dirty', p || s);
   $('#save').disabled = !(p || s);
 }
+// If the file changed in GitHub since we loaded it (another phone/PC, or an automatic update),
+// re-read it and apply only what changed here, then save again.
+function mergeProducts(remote) {
+  const base = JSON.parse(saved.products), byBase = new Map(base.map((p) => [p.id, JSON.stringify(p)]));
+  const localIds = new Set(products.map((p) => p.id));
+  let out = remote.filter((p) => !(byBase.has(p.id) && !localIds.has(p.id))); // deleted here
+  for (const p of products) {
+    if (byBase.get(p.id) === JSON.stringify(p)) continue;                    // untouched here
+    const i = out.findIndex((x) => x.id === p.id);
+    if (i >= 0) out[i] = p; else out.push(p);
+  }
+  return out;
+}
+async function saveFile(kind) {
+  const path = 'data/' + kind + '.json';
+  const local = kind === 'products' ? products : settings;
+  try {
+    await writeFile(path, encodeText(JSON.stringify(local, null, 1)), kind === 'products' ? 'Actualizar productos desde el panel' : 'Actualizar diseño desde el panel');
+  } catch (e) {
+    if (e.status !== 409 && e.status !== 422) throw e;
+    const remote = await readJSON(path); // also refreshes the sha
+    let merged;
+    if (kind === 'products') { merged = mergeProducts(remote); merged.forEach((p) => { p.variants = p.variants || []; }); }
+    else {
+      const base = JSON.parse(saved.settings); merged = Object.assign({}, remote);
+      for (const k of Object.keys(settings)) if (JSON.stringify(settings[k]) !== JSON.stringify(base[k])) merged[k] = settings[k];
+    }
+    await writeFile(path, encodeText(JSON.stringify(merged, null, 1)), kind === 'products' ? 'Actualizar productos desde el panel' : 'Actualizar diseño desde el panel');
+    if (kind === 'products') { products = merged; renderList(); } else { settings = merged; fillDesign(); }
+  }
+  saved[kind] = JSON.stringify(kind === 'products' ? products : settings);
+}
 $('#save').addEventListener('click', async () => {
   $('#busy').classList.remove('hidden');
   try {
-    if (JSON.stringify(products) !== saved.products) {
-      await writeFile('data/products.json', encodeText(JSON.stringify(products, null, 1)), 'Actualizar productos desde el panel');
-      saved.products = JSON.stringify(products);
-    }
-    if (JSON.stringify(settings) !== saved.settings) {
-      await writeFile('data/settings.json', encodeText(JSON.stringify(settings, null, 1)), 'Actualizar diseño desde el panel');
-      saved.settings = JSON.stringify(settings);
-    }
+    if (JSON.stringify(products) !== saved.products) await saveFile('products');
+    if (JSON.stringify(settings) !== saved.settings) await saveFile('settings');
     toast('Guardado ✓ La página se actualiza en 1-2 minutos');
   } catch (e) {
-    toast(e.status === 409 ? 'Hubo cambios desde otro dispositivo. Recargá el panel.' : 'No se pudo guardar. Intentá de nuevo.', true);
+    toast(e.status === 401 ? 'La clave venció o fue borrada. Salí y volvé a entrar con una clave nueva.'
+      : e.status === 403 || e.status === 404 ? 'La clave no tiene permiso para guardar. Tiene que tener "Contents: Read and write".'
+      : 'No se pudo guardar. Revisá tu internet e intentá de nuevo.', true);
   }
   $('#busy').classList.add('hidden');
   updateSaveState();
@@ -818,6 +860,52 @@ $('#orders').addEventListener('click', async (e) => {
     }
     renderList(); updateSaveState(); $('#save').click();
   }
+});
+
+// ---------- Suggestions from customers ----------
+let ideas = [], ideaFilter = 'open';
+async function loadIdeas() {
+  $('#ideas').innerHTML = '<p class="empty">Cargando…</p>';
+  try { ideas = await statsApi('/suggestions'); } catch (e) { $('#ideas').innerHTML = apiError(e); return; }
+  renderIdeas();
+}
+function renderIdeas() {
+  const list = ideas.filter((x) => ideaFilter === 'all' || (ideaFilter === 'traido' ? x.status === 'traido' : x.status !== 'traido'));
+  // group the same brand + product so the most requested go first
+  const key = (x) => norm(x.brand).replace(/[^a-z0-9]/g, '') + '|' + norm(x.product).replace(/[^a-z0-9]/g, '');
+  const groups = new Map();
+  list.forEach((x) => { const k = key(x); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(x); });
+  const sorted = [...groups.values()].sort((a, b) => b.length - a.length || b[0].ts - a[0].ts);
+  const wa = (n) => { const d = String(n).replace(/\D/g, ''); return d.length >= 8 ? 'https://wa.me/' + (d.startsWith('54') ? d : '549' + d.replace(/^0/, '').replace(/^15/, '')) : ''; };
+  $('#ideas').innerHTML = sorted.length ? sorted.map((g) =>
+    '<article class="order-card"><header><h3>' + esc(g[0].brand) + ' · ' + esc(g[0].product) + '</h3>' +
+      (g.length > 1 ? '<span class="status pendiente">Pedido ' + g.length + ' veces</span>' : '') + '</header>' +
+    '<ul>' + g.map((x) => '<li>' + (x.details ? '<b>' + esc(x.details) + '</b> · ' : '') +
+      esc(x.name || 'Anónimo') + (x.contact ? ' · ' + (wa(x.contact) ? '<a href="' + wa(x.contact) + '" target="_blank" rel="noopener">' + esc(x.contact) + '</a>' : esc(x.contact)) : '') +
+      ' <span class="when">' + new Date(x.ts).toLocaleDateString('es-AR') + '</span></li>').join('') + '</ul>' +
+    '<div class="order-btns">' +
+      (g[0].status !== 'traido' ? '<button class="btn ok" data-idea="traido" data-ids="' + g.map((x) => x.id).join(',') + '">✓ Ya lo traje</button>'
+        : '<button class="btn soft" data-idea="vista" data-ids="' + g.map((x) => x.id).join(',') + '">Volver a revisar</button>') +
+      '<button class="btn danger" data-idea="borrar" data-ids="' + g.map((x) => x.id).join(',') + '">Borrar</button>' +
+    '</div></article>').join('')
+    : '<p class="empty">' + (ideaFilter === 'open' ? 'Todavía no hay sugerencias nuevas.' : 'No hay sugerencias acá.') + '</p>';
+}
+$('#idea-chips').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-i]'); if (!b) return;
+  ideaFilter = b.dataset.i;
+  document.querySelectorAll('#idea-chips .chip').forEach((x) => x.classList.toggle('on', x === b));
+  renderIdeas();
+});
+$('#ideas').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-idea]'); if (!b) return;
+  const st = b.dataset.idea, ids = b.dataset.ids.split(',').map(Number);
+  if (st === 'borrar' && !confirm('¿Borrar esta sugerencia? No se puede deshacer.')) return;
+  b.disabled = true;
+  try { for (const id of ids) await statsApi('/suggestions/' + id, { method: 'POST', body: JSON.stringify({ status: st }) }); }
+  catch (err) { toast('No se pudo guardar. Probá de nuevo.', true); b.disabled = false; return; }
+  ideas = st === 'borrar' ? ideas.filter((x) => !ids.includes(x.id)) : ideas.map((x) => ids.includes(x.id) ? Object.assign(x, { status: st }) : x);
+  renderIdeas();
+  toast(st === 'traido' ? 'Marcado como traído ✓' : st === 'borrar' ? 'Sugerencia borrada' : 'Volvió a revisar');
 });
 </script>
 </body>
