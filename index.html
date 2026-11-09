@@ -728,15 +728,20 @@ function start(STORE, PRODUCTS) {
     const data = { brand: $('#s-brand').value.trim(), product: $('#s-product').value.trim(), details: $('#s-details').value.trim(),
       name: $('#s-name').value.trim(), contact: $('#s-contact').value.trim(), website: $('#s-website').value };
     if (!data.brand || !data.product) { msg.className = 'ask-msg bad'; msg.textContent = 'Completá la marca y el producto.'; (data.brand ? $('#s-product') : $('#s-brand')).focus(); return; }
-    if (!STORE.statsUrl) { msg.className = 'ask-msg bad'; msg.textContent = 'No se pudo enviar. Escribinos por WhatsApp.'; return; }
     btn.disabled = true; btn.textContent = 'Enviando…';
     try {
+      if (!STORE.statsUrl) throw new Error('no api');
       const r = await fetch(STORE.statsUrl + '/suggest', { method: 'POST', body: JSON.stringify(data) });
       if (!r.ok) throw new Error(r.status);
       msg.className = 'ask-msg ok'; msg.textContent = '¡Gracias! Recibimos tu sugerencia 💖';
       ['#s-brand', '#s-product', '#s-details'].forEach((k) => { $(k).value = ''; });
     } catch (err) {
-      msg.className = 'ask-msg bad'; msg.textContent = 'No se pudo enviar. Probá de nuevo o escribinos por WhatsApp.';
+      // fallback: send it by WhatsApp so the suggestion is never lost
+      msg.className = 'ask-msg bad'; msg.textContent = '';
+      const a = document.createElement('a');
+      a.href = waLink('¡Hola! Me gustaría que traigan: ' + data.brand + ' — ' + data.product + (data.details ? ' (' + data.details + ')' : ''));
+      a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'No se pudo enviar desde acá. Tocá para mandarla por WhatsApp';
+      msg.appendChild(a);
     }
     btn.disabled = false; btn.textContent = 'Enviar sugerencia';
   });
