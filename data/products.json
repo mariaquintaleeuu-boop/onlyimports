@@ -849,13 +849,18 @@
   "type": "Primers",
   "price": 35000,
   "offer": 0,
-  "stock": 2,
+  "stock": 0,
   "img": "img/p/67c4f3aa49cf372d.jpg",
+  "images": [
+   "img/p/ff9edcaddde9a95c.jpg"
+  ],
+  "desc": "",
   "mp": "",
+  "ml": "",
   "variants": [
    {
     "name": "Rosa 4porcie niacinamide",
-    "stock": 2,
+    "stock": 0,
     "img": ""
    },
    {
@@ -863,9 +868,6 @@
     "stock": 0,
     "img": ""
    }
-  ],
-  "images": [
-   "img/p/ff9edcaddde9a95c.jpg"
   ]
  },
  {
