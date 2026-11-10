@@ -12,6 +12,7 @@ const SCHEMA = [
   'CREATE TABLE IF NOT EXISTS suggestions (id INTEGER PRIMARY KEY, ts INTEGER, brand TEXT, product TEXT, details TEXT, name TEXT, contact TEXT, status TEXT DEFAULT \'nueva\')',
   'CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT)',
   'CREATE TABLE IF NOT EXISTS ml_orders (id TEXT PRIMARY KEY, ts INTEGER)',
+  'CREATE TABLE IF NOT EXISTS ml_sales (id INTEGER PRIMARY KEY, ts INTEGER, pid TEXT, variant TEXT, qty INTEGER, title TEXT)',
   'CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, ts INTEGER, name TEXT, items TEXT, total INTEGER, delivery TEXT, source TEXT, status TEXT DEFAULT \'pendiente\')',
 ];
 let ready = false;
@@ -67,21 +68,28 @@ async function stats(db, days) {
     all("SELECT pid, SUM(type = 'open') opens, SUM(type = 'add') adds, SUM(type = 'buy_now') buy_now, SUM(type = 'ml') ml FROM events WHERE day >= ? AND pid != '' GROUP BY pid"),
     db.prepare('SELECT status, items, total FROM orders WHERE ts >= ?').bind(Date.parse(from + 'T03:00:00Z')).all().then((r) => r.results),
   ]);
-  const sold = {};
+  const sold = {}, pendingQ = {};
   let salesTotal = 0, salesCount = 0, pending = 0, notSold = 0;
   for (const o of orders) {
     if (o.status === 'vendido') {
       salesCount++; salesTotal += o.total || 0;
       for (const it of JSON.parse(o.items || '[]')) sold[it.pid] = (sold[it.pid] || 0) + (+it.q || 0);
-    } else if (o.status === 'no') notSold++; else pending++;
+    } else if (o.status === 'no') notSold++;
+    else { pending++; for (const it of JSON.parse(o.items || '[]')) pendingQ[it.pid] = (pendingQ[it.pid] || 0) + (+it.q || 0); }
   }
+  const mlRows = await db.prepare('SELECT pid, title, SUM(qty) q FROM ml_sales WHERE ts >= ? GROUP BY pid, title').bind(Date.parse(from + 'T03:00:00Z')).all().then((r) => r.results);
+  const mlSold = {}, mlOther = [];
+  for (const r of mlRows) { if (r.pid) mlSold[r.pid] = (mlSold[r.pid] || 0) + r.q; else mlOther.push({ title: r.title, q: r.q }); }
+  const pids = new Set([...perProduct.map((p) => p.pid), ...Object.keys(sold), ...Object.keys(pendingQ), ...Object.keys(mlSold)]);
+  const base = Object.fromEntries(perProduct.map((p) => [p.pid, p]));
   const visits = tot.visits || 0;
   return {
     days, from, visits, visitors: tot.visitors || 0,
     engaged: eng.n || 0, sawProducts: prod.n || 0,
     avgSeconds: visits ? Math.round((time.secs || 0) / visits) : 0,
     perDay,
-    products: perProduct.map((p) => ({ ...p, sold: sold[p.pid] || 0 })),
+    products: [...pids].filter(Boolean).map((pid) => ({ pid, opens: 0, adds: 0, buy_now: 0, ml: 0, ...(base[pid] || {}), sold: sold[pid] || 0, pending: pendingQ[pid] || 0, mlSold: mlSold[pid] || 0 })),
+    mlOther,
     orders: { total: orders.length, sold: salesCount, notSold, pending, salesTotal },
   };
 }
@@ -115,60 +123,97 @@ const b64ToText = (b) => new TextDecoder().decode(Uint8Array.from(atob(b.replace
 const textToB64 = (t) => { const bytes = new TextEncoder().encode(t); let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); };
 const ghHeaders = (gh) => ({ Authorization: 'Bearer ' + gh, Accept: 'application/vnd.github+json', 'User-Agent': 'onlyimports-api' });
 
+// Matches a Mercado Libre listing to the shop product/tone whose link points to it.
+function findTarget(products, keys) {
+  const hit = (url) => !!url && (url.replace(/-/g, '').match(/MLAU?\d+/g) || []).some((x) => keys.includes(x));
+  for (const p of products) {
+    const vs = p.variants || [];
+    const v = vs.find((x) => hit(x.ml));
+    if (v) return { p, v };
+    if (hit(p.ml)) return { p, v: null, needsTone: vs.length > 0 };
+  }
+  return null;
+}
+const keysOf = (it) => [it.catalog_product_id, it.user_product_id, it.id].filter(Boolean).map((k) => String(k).replace('-', ''));
+
 async function mlSync(db) {
   const tok = await mlToken(db), gh = await kvGet(db, 'gh_token');
   if (!tok) return { ok: false, msg: 'Mercado Libre no está conectado.' };
   if (!gh) return { ok: false, msg: 'Falta la clave de GitHub (entrá al panel para que se guarde).' };
-  const since = (await kvGet(db, 'ml_since')) || new Date().toISOString();
   const H = { Authorization: 'Bearer ' + tok.access };
-  const r = await fetch(ML + '/orders/search?seller=' + tok.user + '&order.status=paid&sort=date_asc&limit=50&order.date_created.from=' + encodeURIComponent(since), { headers: H });
-  if (!r.ok) { await mlLog(db, 'Error leyendo ventas de Mercado Libre (' + r.status + ').'); return { ok: false, msg: 'Error ' + r.status }; }
-  const orders = (await r.json()).results || [];
-  // move the window forward so it never gets stuck on old orders (already-applied ones are skipped by id)
-  const advance = () => orders.length && orders[orders.length - 1].date_created ? kvSet(db, 'ml_since', orders[orders.length - 1].date_created) : null;
-  const fresh = [];
-  for (const o of orders) {
-    if (!(await db.prepare('SELECT 1 FROM ml_orders WHERE id = ?').bind(String(o.id)).first())) fresh.push(o);
+
+  // 1) current stock of every listing (active ones + the ones we already know, so a listing that ran out is not lost)
+  const known = (await kvGet(db, 'ml_items')) || {};
+  const ids = new Set(Object.keys(known));
+  for (let off = 0; off < 500; off += 100) {
+    const r = await fetch(ML + '/users/' + tok.user + '/items/search?limit=100&offset=' + off, { headers: H });
+    if (!r.ok) { await mlLog(db, 'Error leyendo tus publicaciones (' + r.status + ').'); return { ok: false, msg: 'Error ' + r.status }; }
+    const j = await r.json();
+    (j.results || []).forEach((x) => ids.add(x));
+    if (!j.paging || off + 100 >= j.paging.total) break;
   }
-  if (!fresh.length) { await advance(); await kvSet(db, 'ml_synced', Date.now()); return { ok: true, applied: 0 }; }
-  // shop products from GitHub
+  const items = [];
+  const list = [...ids];
+  for (let i = 0; i < list.length; i += 20) {
+    const r = await fetch(ML + '/items?ids=' + list.slice(i, i + 20).join(',') + '&attributes=id,title,available_quantity,status,catalog_product_id,user_product_id', { headers: H });
+    if (!r.ok) { await mlLog(db, 'Error leyendo stock de Mercado Libre (' + r.status + ').'); return { ok: false, msg: 'Error ' + r.status }; }
+    for (const x of await r.json()) if (x.code === 200 && x.body) items.push(x.body);
+  }
+
+  // 2) shop products
   const fr = await fetch('https://api.github.com/repos/' + REPO + '/contents/data/products.json?ref=main', { headers: ghHeaders(gh) });
   if (!fr.ok) { await mlLog(db, 'No se pudo leer los productos de la web (GitHub ' + fr.status + ').'); return { ok: false, msg: 'GitHub ' + fr.status }; }
   const file = await fr.json(), products = JSON.parse(b64ToText(file.content));
-  const itemCache = {};
-  const lines = [];
-  for (const o of fresh) {
-    for (const oi of o.order_items || []) {
-      const id = oi.item.id, q = +oi.quantity || 1;
-      if (!itemCache[id]) {
-        const ir = await fetch(ML + '/items/' + id + '?attributes=id,title,catalog_product_id,user_product_id', { headers: H });
-        itemCache[id] = ir.ok ? await ir.json() : { id };
-      }
-      const it = itemCache[id];
-      const keys = [it.catalog_product_id, it.user_product_id, id].filter(Boolean).map((k) => String(k).replace('-', ''));
-      // compare whole ids found in the link (MLA123…, MLAU123…), never partial text
-      const hit = (url) => !!url && (url.replace(/-/g, '').match(/MLAU?\d+/g) || []).some((x) => keys.includes(x));
-      let done = false;
-      for (const p of products) {
-        const vs = p.variants || [];
-        const v = vs.find((x) => hit(x.ml));
-        if (v) { v.stock = Math.max(0, (+v.stock || 0) - q); p.stock = vs.reduce((a, x) => a + (+x.stock || 0), 0); lines.push('-' + q + ' ' + p.name + ' (' + v.name + ') → quedan ' + v.stock); done = true; break; }
-        if (hit(p.ml) && !vs.length) { p.stock = Math.max(0, (+p.stock || 0) - q); lines.push('-' + q + ' ' + p.name + ' → quedan ' + p.stock); done = true; break; }
-        if (hit(p.ml) && vs.length) { lines.push('Venta de "' + p.name + '" en Mercado Libre: no sé de qué tono, descontalo a mano.'); done = true; break; }
-      }
-      if (!done) lines.push('Venta de "' + (it.title || oi.item.title || id) + '" en Mercado Libre: no está en la web.');
-    }
+
+  // 3) every change of stock in Mercado Libre (sale, manual change, restock) is applied to the web
+  const next = {}, lines = [];
+  let changed = false, firstRun = !Object.keys(known).length;
+  for (const it of items) {
+    const q = it.status === 'closed' ? 0 : Math.max(0, +it.available_quantity || 0);
+    next[it.id] = { q };
+    const prev = known[it.id];
+    if (!prev || prev.q === q) continue;
+    const delta = q - prev.q, t = findTarget(products, keysOf(it));
+    const what = (delta < 0 ? '−' : '+') + Math.abs(delta);
+    if (!t) { lines.push('Mercado Libre ' + what + ' en "' + it.title + '", que no está en la web.'); continue; }
+    if (t.needsTone) { lines.push('Mercado Libre ' + what + ' en "' + t.p.name + '": no sé de qué tono, cambialo a mano.'); continue; }
+    if (t.v) { t.v.stock = Math.max(0, (+t.v.stock || 0) + delta); t.p.stock = t.p.variants.reduce((a, x) => a + (+x.stock || 0), 0); }
+    else t.p.stock = Math.max(0, (+t.p.stock || 0) + delta);
+    changed = true;
+    lines.push(what + ' ' + t.p.name + (t.v ? ' (' + t.v.name + ')' : '') + ' → en la web quedan ' + (t.v ? t.v.stock : t.p.stock));
   }
-  if (lines.some((l) => l.startsWith('-'))) {
+  for (const id of Object.keys(known)) if (!next[id]) next[id] = known[id]; // keep listings we could not read this time
+
+  if (changed) {
     const put = await fetch('https://api.github.com/repos/' + REPO + '/contents/data/products.json', { method: 'PUT', headers: ghHeaders(gh),
-      body: JSON.stringify({ message: 'Ventas en Mercado Libre: descontar stock', content: textToB64(JSON.stringify(products, null, 1)), sha: file.sha, branch: 'main' }) });
+      body: JSON.stringify({ message: 'Stock igualado con Mercado Libre', content: textToB64(JSON.stringify(products, null, 1)), sha: file.sha, branch: 'main' }) });
     if (!put.ok) { await mlLog(db, 'No se pudo guardar el stock en la web (GitHub ' + put.status + '). Se reintenta en 15 minutos.'); return { ok: false, msg: 'GitHub ' + put.status }; }
   }
-  for (const o of fresh) await db.prepare('INSERT OR IGNORE INTO ml_orders (id, ts) VALUES (?, ?)').bind(String(o.id), Date.now()).run();
-  for (const l of lines) await mlLog(db, l);
-  await advance();
+  await kvSet(db, 'ml_items', next); // only after saving, so nothing is lost if saving failed
+  for (const l of lines.reverse()) await mlLog(db, l);
+  if (firstRun) await mlLog(db, 'Listo: ' + items.length + ' publicaciones vigiladas. Desde ahora cualquier cambio de stock en Mercado Libre pasa a la web.');
+
+  // 4) count Mercado Libre sales (for "Cálculo"); stock is already handled above
+  try {
+    const since = (await kvGet(db, 'ml_since')) || new Date().toISOString();
+    const r = await fetch(ML + '/orders/search?seller=' + tok.user + '&order.status=paid&sort=date_asc&limit=50&order.date_created.from=' + encodeURIComponent(since), { headers: H });
+    if (r.ok) {
+      const orders = (await r.json()).results || [];
+      for (const o of orders) {
+        if (await db.prepare('SELECT 1 FROM ml_orders WHERE id = ?').bind(String(o.id)).first()) continue;
+        for (const oi of o.order_items || []) {
+          const it = items.find((x) => x.id === oi.item.id) || { id: oi.item.id };
+          const t = findTarget(products, keysOf(it));
+          await db.prepare('INSERT INTO ml_sales (ts, pid, variant, qty, title) VALUES (?, ?, ?, ?, ?)')
+            .bind(Date.parse(o.date_created) || Date.now(), t ? t.p.id : '', t && t.v ? t.v.name : '', +oi.quantity || 1, str(oi.item.title, 120)).run();
+        }
+        await db.prepare('INSERT OR IGNORE INTO ml_orders (id, ts) VALUES (?, ?)').bind(String(o.id), Date.now()).run();
+      }
+      if (orders.length && orders[orders.length - 1].date_created) await kvSet(db, 'ml_since', orders[orders.length - 1].date_created);
+    }
+  } catch (e) {}
   await kvSet(db, 'ml_synced', Date.now());
-  return { ok: true, applied: fresh.length, lines };
+  return { ok: true, applied: lines.length, lines };
 }
 
 async function mlRoutes(req, url, db, admin) {
@@ -185,7 +230,7 @@ async function mlRoutes(req, url, db, admin) {
     await kvSet(db, 'ml_tok', { access: j.access_token, refresh: j.refresh_token, exp: Date.now() + j.expires_in * 1000, user: j.user_id, nick: me.nickname || '' });
     if (!(await kvGet(db, 'ml_since'))) await kvSet(db, 'ml_since', new Date().toISOString());
     await db.prepare("DELETE FROM kv WHERE k = 'ml_state'").run();
-    await mlLog(db, 'Mercado Libre conectado' + (me.nickname ? ' (' + me.nickname + ')' : '') + '. Desde ahora las ventas descuentan stock de la web.');
+    await mlLog(db, 'Mercado Libre conectado' + (me.nickname ? ' (' + me.nickname + ')' : '') + '. Desde ahora el stock de Mercado Libre pasa a la web.');
     return back('ok');
   }
   if (!admin) return null;

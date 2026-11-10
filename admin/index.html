@@ -206,6 +206,7 @@ textarea.in{resize:vertical;min-height:70px}
       <button class="tab on" data-tab="products">Productos</button>
       <button class="tab" data-tab="stats">Estadísticas</button>
       <button class="tab" data-tab="orders">Pedidos</button>
+      <button class="tab" data-tab="calc">Cálculo</button>
       <button class="tab" data-tab="ideas">Sugerencias</button>
       <button class="tab" data-tab="design">Diseño</button>
     </div>
@@ -251,14 +252,25 @@ textarea.in{resize:vertical;min-height:70px}
   <!-- Orders tab -->
   <main class="wrap hidden" id="tab-orders">
     <div class="card" id="ml-card" style="margin-top:16px"><h2>Mercado Libre → stock de la web</h2><div id="ml-body"><p class="empty">Cargando…</p></div></div>
-    <p class="hint-top">Cada vez que alguien manda un pedido por WhatsApp aparece acá con su número (#). Cuando sepas si lo pagó, marcá si se vendió o no.</p>
+    <p class="hint-top">Cuando alguien toca "Comprar ahora" (o "Enviar pedido") y manda el pedido por WhatsApp, aparece acá como <b>comprado sin confirmar</b>, con su número (#). Cuando te pague, tocá <b>Confirmar venta</b>; si no compró, tocá "No se concretó".</p>
     <div class="chips" id="order-chips">
-      <button class="chip on" data-o="pendiente">Pendientes</button>
-      <button class="chip" data-o="vendido">Vendidos</button>
-      <button class="chip" data-o="no">No vendidos</button>
+      <button class="chip on" data-o="pendiente">Sin confirmar</button>
+      <button class="chip" data-o="vendido">Confirmadas</button>
+      <button class="chip" data-o="no">No se concretó</button>
       <button class="chip" data-o="all">Todos</button>
     </div>
     <div id="orders"><p class="empty">Cargando…</p></div>
+  </main>
+
+  <!-- Calculation tab -->
+  <main class="wrap hidden" id="tab-calc">
+    <div class="chips" id="calc-period" style="margin:16px 0 4px">
+      <button class="chip" data-days="7">7 días</button>
+      <button class="chip on" data-days="30">30 días</button>
+      <button class="chip" data-days="90">90 días</button>
+      <button class="chip" data-days="365">1 año</button>
+    </div>
+    <div id="calc"><p class="empty">Cargando…</p></div>
   </main>
 
   <!-- Suggestions tab -->
@@ -483,11 +495,12 @@ if (storedToken) login(storedToken);
 // ---------- Tabs ----------
 document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x === b));
-  ['products', 'stats', 'orders', 'ideas', 'design'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', b.dataset.tab !== t));
+  ['products', 'stats', 'orders', 'calc', 'ideas', 'design'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', b.dataset.tab !== t));
   if (b.dataset.tab === 'design') renderCatOrder();
   if (b.dataset.tab === 'stats') loadStats();
   if (b.dataset.tab === 'orders') { loadOrders(); loadMl(); }
   if (b.dataset.tab === 'ideas') loadIdeas();
+  if (b.dataset.tab === 'calc') loadCalc();
 }));
 
 // ---------- Save ----------
@@ -841,7 +854,7 @@ async function loadOrders() {
 }
 function renderOrders() {
   const list = orders.filter((o) => orderFilter === 'all' || o.status === orderFilter);
-  const label = { pendiente: 'Sin confirmar', vendido: 'Vendido', no: 'No se vendió' };
+  const label = { pendiente: 'Comprado · sin confirmar', vendido: 'Venta confirmada ✓', no: 'No se concretó' };
   $('#orders').innerHTML = list.length ? list.map((o) =>
     '<article class="order-card"><header><h3>#' + esc(o.id) + ' · ' + esc(o.name || 'Sin nombre') + '</h3><span class="status ' + o.status + '">' + label[o.status] + '</span></header>' +
     '<div class="when">' + new Date(o.ts).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) + ' · ' +
@@ -849,7 +862,7 @@ function renderOrders() {
     '<ul>' + o.items.map((it) => '<li>' + it.q + 'x ' + esc(it.label) + ' — ' + money.format(it.price * it.q) + '</li>').join('') + '</ul>' +
     '<div class="tot">Total: ' + money.format(o.total) + '</div>' +
     '<div class="order-btns">' +
-      (o.status !== 'vendido' ? '<button class="btn ok" data-st="vendido" data-id="' + esc(o.id) + '">✓ Se vendió</button>' : '') +
+      (o.status !== 'vendido' ? '<button class="btn ok" data-st="vendido" data-id="' + esc(o.id) + '">✓ Confirmar venta</button>' : '') +
       (o.status !== 'no' ? '<button class="btn danger" data-st="no" data-id="' + esc(o.id) + '">✗ No se vendió</button>' : '') +
       (o.status !== 'pendiente' ? '<button class="btn soft" data-st="pendiente" data-id="' + esc(o.id) + '">Volver a pendiente</button>' : '') +
     '</div></article>').join('')
@@ -868,7 +881,7 @@ $('#orders').addEventListener('click', async (e) => {
   try { await statsApi('/orders/' + o.id, { method: 'POST', body: JSON.stringify({ status: st }) }); }
   catch (err) { toast('No se pudo guardar. Probá de nuevo.', true); b.disabled = false; return; }
   o.status = st; renderOrders();
-  toast(st === 'vendido' ? 'Marcado como vendido ✓' : st === 'no' ? 'Marcado como no vendido' : 'Volvió a pendientes');
+  toast(st === 'vendido' ? 'Venta confirmada ✓' : st === 'no' ? 'Marcado: no se concretó' : 'Volvió a sin confirmar');
   if (st === 'vendido' && confirm('¿Descontar del stock lo que se vendió en el pedido #' + o.id + '?')) {
     for (const it of o.items) {
       const p = byPid(it.pid); if (!p) continue;
@@ -942,8 +955,8 @@ async function loadMl() {
   try { st = await statsApi('/ml/status'); } catch (e) { $('#ml-body').innerHTML = apiError(e); return; }
   const log = st.log.length ? '<ul style="font-size:13px;line-height:1.5;padding-left:18px;margin:8px 0 0">' + st.log.slice(0, 10).map((l) => '<li>' + esc(l.text) + ' <span class="when">' + new Date(l.ts).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) + '</span></li>').join('') + '</ul>' : '';
   if (st.connected) {
-    $('#ml-body').innerHTML = '<p style="font-size:14px">✅ Conectado' + (st.nick ? ' como <b>' + esc(st.nick) + '</b>' : '') + '. Cada 15 minutos reviso tus ventas de Mercado Libre y descuento ese stock en la web. Última revisión: ' + ago(st.synced) + '.</p>' +
-      '<div class="order-btns" style="grid-template-columns:1fr 1fr"><button class="btn soft" id="ml-sync">Revisar ventas ahora</button><button class="btn soft" id="ml-reconnect">Volver a conectar</button></div>' + log;
+    $('#ml-body').innerHTML = '<p style="font-size:14px">✅ Conectado' + (st.nick ? ' como <b>' + esc(st.nick) + '</b>' : '') + '. Cada 15 minutos reviso el stock de tus publicaciones: si baja en Mercado Libre (por una venta o porque lo sacaste a mano) baja en la web, y si cargás más, sube. Última revisión: ' + ago(st.synced) + '.</p>' +
+      '<div class="order-btns" style="grid-template-columns:1fr 1fr"><button class="btn soft" id="ml-sync">Revisar ahora</button><button class="btn soft" id="ml-reconnect">Volver a conectar</button></div>' + log;
   } else if (st.configured) {
     $('#ml-body').innerHTML = '<p style="font-size:14px">Último paso: tocá el botón e iniciá sesión con la cuenta de Mercado Libre de la tienda.</p>' +
       '<button class="btn ok" id="ml-connect" style="width:100%">Conectar Mercado Libre</button>' +
@@ -969,10 +982,55 @@ $('#ml-body').addEventListener('click', async (e) => {
   }
   if (id === 'ml-sync') {
     e.target.disabled = true; e.target.textContent = 'Revisando…';
-    try { const r = await statsApi('/ml/sync', { method: 'POST' }); toast(r.ok ? (r.applied ? r.applied + ' venta(s) nuevas aplicadas ✓' : 'No hay ventas nuevas') : r.msg, !r.ok); }
+    try { const r = await statsApi('/ml/sync', { method: 'POST' }); toast(r.ok ? (r.applied ? r.applied + ' cambio(s) aplicados ✓' : 'Todo igual, no hay cambios') : r.msg, !r.ok); }
     catch (err) { toast('No se pudo revisar ahora.', true); }
     loadMl();
   }
+});
+
+// ---------- Cálculo: what sells, what people look at, what they want but don't buy ----------
+let calcDays = 30;
+async function loadCalc() {
+  $('#calc').innerHTML = '<p class="empty">Calculando…</p>';
+  const ask = ++loadCalc.n;
+  let d;
+  try { d = await statsApi('/stats?days=' + calcDays); } catch (e) { if (ask === loadCalc.n) $('#calc').innerHTML = apiError(e); return; }
+  if (ask !== loadCalc.n) return;
+  const rows = d.products.map((p) => Object.assign({ prod: byPid(p.pid), total: p.sold + p.mlSold }, p)).filter((p) => p.prod);
+  const img = (p) => '<img src="' + esc(imgSrc(p.prod.img)) + '" alt="">';
+  const rank = (title, hint, list, val, extra) => '<div class="card"><h2>' + title + '</h2>' + (hint ? '<p style="font-size:12px;color:var(--muted);margin:-6px 0 8px">' + hint + '</p>' : '') +
+    (list.length ? '<table class="ptable">' + list.map((p, i) => '<tr><td>' + '<b style="width:18px;flex:none;color:var(--muted)">' + (i + 1) + '</b>' + img(p) +
+      '<div><div class="pn">' + esc(p.prod.name) + '</div>' + (extra ? '<span style="font-size:11px;color:var(--muted)">' + extra(p) + '</span>' : '') + '</div></td><td><b style="font-size:16px">' + val(p) + '</b></td></tr>').join('') + '</table>'
+      : '<p class="empty" style="padding:14px">Todavía no hay datos.</p>') + '</div>';
+  const top = (fn, filt) => rows.filter(filt || ((p) => fn(p) > 0)).sort((a, b) => fn(b) - fn(a)).slice(0, 10);
+  const totalSold = rows.reduce((a, p) => a + p.total, 0), totalOpens = rows.reduce((a, p) => a + p.opens, 0);
+  const conv = (p) => p.opens ? Math.round(p.total / p.opens * 100) : 0;
+  $('#calc').innerHTML =
+    '<div class="kpis">' +
+      '<div class="kpi hl"><span>Unidades vendidas</span><b>' + totalSold + '</b><small>web confirmadas + Mercado Libre</small></div>' +
+      '<div class="kpi"><span>Clics en productos</span><b>' + totalOpens + '</b><small>veces que abrieron un producto</small></div>' +
+      '<div class="kpi"><span>Comprados sin confirmar</span><b>' + rows.reduce((a, p) => a + p.pending, 0) + '</b><small>en la pestaña Pedidos</small></div>' +
+      '<div class="kpi"><span>De cada 100 clics…</span><b>' + (totalOpens ? Math.round(totalSold / totalOpens * 100) : 0) + '</b><small>terminan en venta</small></div>' +
+    '</div>' +
+    rank('🏆 Lo más vendido', 'Ventas confirmadas en la web + ventas de Mercado Libre.', top((p) => p.total), (p) => p.total + ' u.',
+      (p) => 'Web ' + p.sold + ' · Mercado Libre ' + p.mlSold + (p.pending ? ' · ' + p.pending + ' sin confirmar' : '')) +
+    rank('👀 Lo más mirado', 'Cuántas veces abrieron el producto en la web.', top((p) => p.opens), (p) => p.opens,
+      (p) => p.adds + ' al carrito · ' + p.buy_now + ' "Comprar ahora" · ' + p.ml + ' a Mercado Libre') +
+    rank('🛒 Lo que más quieren comprar', 'Agregados al carrito + "Comprar ahora" (aunque después no hayan pagado).', top((p) => p.adds + p.buy_now), (p) => p.adds + p.buy_now,
+      (p) => p.adds + ' carrito · ' + p.buy_now + ' comprar ahora') +
+    rank('⚠️ Miran mucho pero no compran', 'Muchos clics y pocas ventas: puede ser el precio, las fotos, la descripción o que falte el tono que buscan.',
+      top((p) => p.opens, (p) => p.opens >= 3 && conv(p) < 10), (p) => p.opens + ' clics', (p) => p.total + ' vendidos · ' + conv(p) + '% de conversión') +
+    rank('💤 Se venden y casi no los miran', 'Se venden igual: vale la pena destacarlos más.', top((p) => p.total, (p) => p.total > 0 && p.opens <= p.total), (p) => p.total + ' u.', (p) => p.opens + ' clics') +
+    (d.mlOther && d.mlOther.length ? '<div class="card"><h2>Vendido en Mercado Libre que no está en la web</h2><ul style="font-size:13px;padding-left:18px">' +
+      d.mlOther.map((x) => '<li>' + esc(x.title) + ' — ' + x.q + ' u.</li>').join('') + '</ul></div>' : '') +
+    '<p style="font-size:11px;color:var(--muted);text-align:center">Las ventas de Mercado Libre se cuentan desde que lo conectaste.</p>';
+}
+loadCalc.n = 0;
+$('#calc-period').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-days]'); if (!b) return;
+  calcDays = +b.dataset.days;
+  document.querySelectorAll('#calc-period .chip').forEach((x) => x.classList.toggle('on', x === b));
+  loadCalc();
 });
 </script>
 </body>
