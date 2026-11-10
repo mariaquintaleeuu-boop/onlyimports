@@ -75,6 +75,9 @@ a{color:inherit}
 .hero{text-align:center;padding:clamp(48px,8vw,96px) 0 clamp(32px,5vw,56px)}
 .hero h1{margin:0 0 14px;font:700 clamp(36px,6.5vw,76px)/1.02 Fredoka,sans-serif;letter-spacing:.01em}
 .hero p{margin:0 auto 26px;max-width:560px;font-size:clamp(15px,1.8vw,18px);color:var(--muted)}
+.hero-btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.btn-ghost{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:12px 22px;font-weight:700;text-decoration:none;color:#8a3fd1;background:#fff;border:2px solid #e4cdfa}
+.menu-ask{display:block;margin:12px 18px 24px;padding:14px;border-radius:16px;text-align:center;font-weight:700;text-decoration:none;color:#8a3fd1;background:#f6edff}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:999px;padding:14px 28px;font-weight:700;text-decoration:none;color:#fff;background:var(--grad);background-size:300%;animation:shine 8s ease-in-out infinite;box-shadow:0 14px 30px -12px #ff5fa2;transition:transform .2s}
 .btn:hover{transform:translateY(-2px)}
 .badges{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:26px}
@@ -325,6 +328,7 @@ footer a:hover{color:#c2367a}
     <nav class="nav">
       <a href="#catalogo">Productos</a>
       <a href="#como-comprar">Cómo comprar</a>
+      <a href="#pedinos">Pedinos un producto</a>
       <a href="#contacto">Contacto</a>
       <button class="cart-btn" id="open-cart" aria-label="Ver mi pedido">
         <svg viewBox="0 0 24 24"><path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM5.2 4l.9 2H20a1 1 0 0 1 .9 1.4l-3.3 6.3a2 2 0 0 1-1.8 1.1H8.1l-1 1.8V17h12v2H7a2 2 0 0 1-1.8-2.9L6.6 13 3 4H1V2h3.3z"/></svg>
@@ -338,7 +342,7 @@ footer a:hover{color:#c2367a}
   <section class="hero wrap">
     <h1><span id="hero-title"></span><br><span class="grad" id="hero-highlight"></span></h1>
     <p id="hero-text"></p>
-    <a class="btn" href="#catalogo">Ver productos</a>
+    <div class="hero-btns"><a class="btn" href="#catalogo">Ver productos</a><a class="btn-ghost" href="#pedinos">✦ Pedinos un producto</a></div>
     <div class="badges" id="badges"></div>
   </section>
 
@@ -410,6 +414,7 @@ footer a:hover{color:#c2367a}
 <aside class="menu" id="menu" aria-label="Categorías">
   <header><h2>Explorar</h2><button class="close" id="close-menu" aria-label="Cerrar">×</button></header>
   <nav class="menu-body" id="menu-body"></nav>
+  <a class="menu-ask" href="#pedinos" id="menu-ask">✦ ¿No encontrás algo? Pedinos que lo traigamos</a>
 </aside>
 <aside class="drawer" id="drawer" aria-label="Mi pedido">
   <header><button class="back hidden" id="back-cart" aria-label="Volver al pedido">‹</button><h2 id="drawer-title">Mi pedido</h2><button class="close" id="close-cart" aria-label="Cerrar">×</button></header>
@@ -1153,6 +1158,7 @@ function start(STORE, PRODUCTS) {
   $('#close-cart').addEventListener('click', () => openPanel('cart', false));
   $('#open-menu').addEventListener('click', () => openPanel('menu', true));
   $('#close-menu').addEventListener('click', () => openPanel('menu', false));
+  $('#menu-ask').addEventListener('click', () => openPanel('menu', false));
   $('#overlay').addEventListener('click', closeAll);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAll(); });
 

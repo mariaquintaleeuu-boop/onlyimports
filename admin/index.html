@@ -227,6 +227,16 @@ textarea.in{resize:vertical;min-height:70px}
     <div id="list"></div>
   </main>
 
+  <div class="wrap hidden" id="perm-warn"><div class="card" style="margin-top:12px;border:2px solid #f3b4b4">
+    <h2 style="color:var(--bad)">⚠️ Tu clave no puede guardar cambios</h2>
+    <p style="font-size:14px;line-height:1.5">La clave de GitHub con la que entraste solo tiene permiso para <b>leer</b>. Para arreglarlo (la clave sigue siendo la misma, no hay que cambiarla acá):</p>
+    <ol style="font-size:14px;line-height:1.6;padding-left:20px">
+      <li>Entrá a <a href="https://github.com/settings/personal-access-tokens" target="_blank" rel="noopener">github.com/settings/personal-access-tokens</a> y tocá tu clave.</li>
+      <li>Tocá <b>Edit</b>. En "Repository permissions" → <b>Contents</b>, elegí <b>Read and write</b>.</li>
+      <li>Abajo, tocá <b>Update</b>. Volvé acá y recargá la página.</li>
+    </ol>
+  </div></div>
+
   <!-- Statistics tab -->
   <main class="wrap hidden" id="tab-stats">
     <div class="chips" id="period" style="margin:16px 0 4px">
@@ -240,6 +250,7 @@ textarea.in{resize:vertical;min-height:70px}
 
   <!-- Orders tab -->
   <main class="wrap hidden" id="tab-orders">
+    <div class="card" id="ml-card" style="margin-top:16px"><h2>Mercado Libre → stock de la web</h2><div id="ml-body"><p class="empty">Cargando…</p></div></div>
     <p class="hint-top">Cada vez que alguien manda un pedido por WhatsApp aparece acá con su número (#). Cuando sepas si lo pagó, marcá si se vendió o no.</p>
     <div class="chips" id="order-chips">
       <button class="chip on" data-o="pendiente">Pendientes</button>
@@ -445,6 +456,13 @@ async function login(t) {
   $('#login').classList.add('hidden');
   $('#app').classList.remove('hidden');
   fillDesign(); renderList(); updateSaveState();
+  checkWrite();
+  if (/[?&]ml=/.test(location.search)) {
+    const ok = /ml=ok/.test(location.search);
+    history.replaceState(null, '', location.pathname);
+    document.querySelector('[data-tab=orders]').click();
+    toast(ok ? 'Mercado Libre conectado ✓' : 'No se pudo conectar Mercado Libre. Probá de nuevo.', !ok);
+  }
   return true;
 }
 $('#login-form').addEventListener('submit', async (e) => {
@@ -468,7 +486,7 @@ document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () 
   ['products', 'stats', 'orders', 'ideas', 'design'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', b.dataset.tab !== t));
   if (b.dataset.tab === 'design') renderCatOrder();
   if (b.dataset.tab === 'stats') loadStats();
-  if (b.dataset.tab === 'orders') loadOrders();
+  if (b.dataset.tab === 'orders') { loadOrders(); loadMl(); }
   if (b.dataset.tab === 'ideas') loadIdeas();
 }));
 
@@ -906,6 +924,55 @@ $('#ideas').addEventListener('click', async (e) => {
   ideas = st === 'borrar' ? ideas.filter((x) => !ids.includes(x.id)) : ideas.map((x) => ids.includes(x.id) ? Object.assign(x, { status: st }) : x);
   renderIdeas();
   toast(st === 'traido' ? 'Marcado como traído ✓' : st === 'borrar' ? 'Sugerencia borrada' : 'Volvió a revisar');
+});
+
+// ---------- Can this key save? (a harmless test: GitHub answers 409 if it can write, 403 if it can only read) ----------
+async function checkWrite() {
+  try {
+    const r = await fetch(API + 'data/products.json', { method: 'PUT', headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json' },
+      body: JSON.stringify({ message: 'check', content: 'eA==', sha: '0000000000000000000000000000000000000000', branch: BRANCH }) });
+    $('#perm-warn').classList.toggle('hidden', r.status !== 403);
+  } catch (e) {}
+}
+
+// ---------- Mercado Libre: sales lower the shop's stock ----------
+const ago = (ts) => { if (!ts) return 'todavía no'; const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? 'recién' : m < 60 ? 'hace ' + m + ' min' : 'hace ' + Math.round(m / 60) + ' h'; };
+async function loadMl() {
+  let st;
+  try { st = await statsApi('/ml/status'); } catch (e) { $('#ml-body').innerHTML = apiError(e); return; }
+  const log = st.log.length ? '<ul style="font-size:13px;line-height:1.5;padding-left:18px;margin:8px 0 0">' + st.log.slice(0, 10).map((l) => '<li>' + esc(l.text) + ' <span class="when">' + new Date(l.ts).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) + '</span></li>').join('') + '</ul>' : '';
+  if (st.connected) {
+    $('#ml-body').innerHTML = '<p style="font-size:14px">✅ Conectado' + (st.nick ? ' como <b>' + esc(st.nick) + '</b>' : '') + '. Cada 15 minutos reviso tus ventas de Mercado Libre y descuento ese stock en la web. Última revisión: ' + ago(st.synced) + '.</p>' +
+      '<div class="order-btns" style="grid-template-columns:1fr 1fr"><button class="btn soft" id="ml-sync">Revisar ventas ahora</button><button class="btn soft" id="ml-reconnect">Volver a conectar</button></div>' + log;
+  } else if (st.configured) {
+    $('#ml-body').innerHTML = '<p style="font-size:14px">Último paso: tocá el botón e iniciá sesión con la cuenta de Mercado Libre de la tienda.</p>' +
+      '<button class="btn ok" id="ml-connect" style="width:100%">Conectar Mercado Libre</button>' +
+      '<p style="font-size:12px;color:var(--muted);margin-top:8px">Client ID guardado: ' + esc(st.clientId) + ' · <a href="#" id="ml-edit">cambiar</a></p>' + log;
+  } else mlForm(log);
+}
+function mlForm(log) {
+  $('#ml-body').innerHTML = '<p style="font-size:14px;line-height:1.5">Pegá los datos de tu aplicación del <a href="https://developers.mercadolibre.com.ar/devcenter" target="_blank" rel="noopener">Devcenter de Mercado Libre</a> (pestaña "Estándar").</p>' +
+    '<label class="f"><span>Client ID (App ID)</span><input class="in" id="ml-id" inputmode="numeric" autocomplete="off"></label>' +
+    '<label class="f"><span>Client Secret</span><input class="in" id="ml-secret" type="password" autocomplete="off"></label>' +
+    '<button class="btn ok" id="ml-save" style="width:100%">Guardar</button>' + (log || '');
+}
+$('#ml-body').addEventListener('click', async (e) => {
+  const id = e.target.id;
+  if (id === 'ml-edit') { e.preventDefault(); return mlForm(); }
+  if (id === 'ml-save') {
+    e.target.disabled = true;
+    try { await statsApi('/ml/config', { method: 'POST', body: JSON.stringify({ id: $('#ml-id').value, secret: $('#ml-secret').value }) }); toast('Guardado ✓'); loadMl(); }
+    catch (err) { toast('Revisá el Client ID y el Client Secret.', true); e.target.disabled = false; }
+  }
+  if (id === 'ml-connect' || id === 'ml-reconnect') {
+    try { const r = await statsApi('/ml/start'); location.href = r.url; } catch (err) { toast('No se pudo iniciar la conexión.', true); }
+  }
+  if (id === 'ml-sync') {
+    e.target.disabled = true; e.target.textContent = 'Revisando…';
+    try { const r = await statsApi('/ml/sync', { method: 'POST' }); toast(r.ok ? (r.applied ? r.applied + ' venta(s) nuevas aplicadas ✓' : 'No hay ventas nuevas') : r.msg, !r.ok); }
+    catch (err) { toast('No se pudo revisar ahora.', true); }
+    loadMl();
+  }
 });
 </script>
 </body>
