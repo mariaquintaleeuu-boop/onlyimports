@@ -108,7 +108,9 @@ textarea.in{resize:vertical;min-height:70px}
 .box{border:2px solid var(--line);border-radius:16px;padding:14px;margin:6px 0 16px}
 .box h3{font-size:17px;margin-bottom:4px}
 .box p.hint{margin:0 0 10px;font-size:12px;color:var(--muted)}
-.vrow{display:grid;grid-template-columns:44px 1fr auto auto;gap:8px;align-items:center;margin-bottom:8px}
+.vrow{display:grid;grid-template-columns:44px 1fr auto auto;gap:8px;align-items:center;margin-bottom:12px}
+.vrow .vdesc{grid-column:1/-1;font-size:13px;padding:8px 10px;min-height:0;resize:vertical}
+.pill.soon{background:#f1e4ff;color:#6b3fc4}
 .vrow img,.vrow .noimg{width:44px;height:44px;border-radius:10px;object-fit:contain;background:var(--soft);border:2px dashed var(--line)}
 .vrow .in{padding:9px 10px;font-size:15px}
 .vdel{border:0;background:none;color:var(--bad);font-size:20px;padding:4px}
@@ -163,6 +165,7 @@ textarea.in{resize:vertical;min-height:70px}
 .status.vendido{background:#e3f6ea;color:var(--ok)}
 .status.no{background:#fde8e8;color:var(--bad)}
 .status.pendiente{background:#fff3dc;color:#a8610a}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .toast{position:fixed;left:50%;top:14px;z-index:60;transform:translate(-50%,-120px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:999px;font-weight:600;font-size:14px;transition:transform .3s;white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis}
 .toast.show{transform:translate(-50%,0)}
 .toast.bad{background:var(--bad)}
@@ -207,6 +210,7 @@ textarea.in{resize:vertical;min-height:70px}
       <button class="tab" data-tab="stats">Estadísticas</button>
       <button class="tab" data-tab="orders">Pedidos</button>
       <button class="tab" data-tab="calc">Cálculo</button>
+      <button class="tab" data-tab="coupons">Cupones</button>
       <button class="tab" data-tab="ideas">Sugerencias</button>
       <button class="tab" data-tab="design">Diseño</button>
     </div>
@@ -271,6 +275,26 @@ textarea.in{resize:vertical;min-height:70px}
       <button class="chip" data-days="365">1 año</button>
     </div>
     <div id="calc"><p class="empty">Cargando…</p></div>
+  </main>
+
+  <!-- Coupons tab -->
+  <main class="wrap hidden" id="tab-coupons">
+    <div class="card" style="margin-top:16px">
+      <h2>Nuevo cupón</h2>
+      <p class="hint-top" style="margin-top:-4px">La clienta lo escribe en el carrito y el descuento se aplica solo (también aparece en el mensaje de WhatsApp). Por seguridad el código se guarda oculto: acá vas a ver solo la primera y la última letra, así que anotalo o usá la nota.</p>
+      <label class="f"><span>Código (lo que escribe la clienta)</span><input class="in" id="c-code" placeholder="Ej: HOLA10" maxlength="30" autocomplete="off" style="text-transform:uppercase"></label>
+      <div class="row2">
+        <label class="f"><span>Tipo</span><select class="in" id="c-type"><option value="percent">% de descuento</option><option value="fixed">$ de descuento</option></select></label>
+        <label class="f"><span>Valor</span><input class="in" id="c-value" type="number" min="1" inputmode="numeric" placeholder="Ej: 10"></label>
+      </div>
+      <div class="row2">
+        <label class="f"><span>Compra mínima $ (opcional)</span><input class="in" id="c-min" type="number" min="0" inputmode="numeric" placeholder="0"></label>
+        <label class="f"><span>Vence el (opcional)</span><input class="in" id="c-until" type="date"></label>
+      </div>
+      <label class="f"><span>Nota para vos (opcional)</span><input class="in" id="c-note" placeholder="Ej: sorteo de Instagram"></label>
+      <button class="btn ok" id="c-add" style="width:100%">Crear cupón</button>
+    </div>
+    <div id="coupons"></div>
   </main>
 
   <!-- Suggestions tab -->
@@ -368,6 +392,9 @@ textarea.in{resize:vertical;min-height:70px}
   </div>
 
   <div class="box">
+    <label class="switch"><input type="checkbox" id="e-soon"> <b>Próximo ingreso</b> (todavía no llegó: se muestra con el cartel "Próximo ingreso" y el botón "Avisame cuando llegue")</label>
+  </div>
+  <div class="box">
     <label class="switch"><input type="checkbox" id="e-hasvar"> Tiene variantes (tonos, colores, diseños)</label>
     <div id="e-novar">
       <div class="f" style="font-size:13px;font-weight:600;margin-bottom:6px">Stock</div>
@@ -380,6 +407,7 @@ textarea.in{resize:vertical;min-height:70px}
     </div>
   </div>
 
+  <label class="f" id="e-tone-wrap"><span>Tono (si tiene uno solo · ej: "Negro", "12 Light Warm")</span><input class="in" id="e-tone" placeholder="Se muestra como Tono: …"></label>
   <label class="f"><span>Descripción (opcional)</span><textarea class="in" id="e-desc" rows="4" placeholder="Para qué sirve, tamaño, cómo se usa..."></textarea></label>
   <label class="f"><span>Link de Mercado Libre (opcional · muestra el botón amarillo)</span><input class="in" id="e-ml" type="url" placeholder="https://www.mercadolibre.com.ar/..."></label>
   <label class="f"><span>Link de pago de Mercado Pago (opcional)</span><input class="in" id="e-mp" type="url" placeholder="https://mpago.la/..."></label>
@@ -495,12 +523,13 @@ if (storedToken) login(storedToken);
 // ---------- Tabs ----------
 document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x === b));
-  ['products', 'stats', 'orders', 'calc', 'ideas', 'design'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', b.dataset.tab !== t));
+  ['products', 'stats', 'orders', 'calc', 'coupons', 'ideas', 'design'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', b.dataset.tab !== t));
   if (b.dataset.tab === 'design') renderCatOrder();
   if (b.dataset.tab === 'stats') loadStats();
   if (b.dataset.tab === 'orders') { loadOrders(); loadMl(); }
   if (b.dataset.tab === 'ideas') loadIdeas();
   if (b.dataset.tab === 'calc') loadCalc();
+  if (b.dataset.tab === 'coupons') renderCoupons();
 }));
 
 // ---------- Save ----------
@@ -598,7 +627,7 @@ function rowHTML(p) {
     '<img src="' + esc(imgSrc(p.img)) + '" alt="" loading="lazy">' +
     '<div class="info" data-edit="' + esc(p.id) + '"><div class="name">' + esc(p.name || 'Sin nombre') + '</div>' +
     '<div class="meta">' + esc(p.brand || '') + (p.brand ? ' · ' : '') + price + ' ' +
-    (s <= 0 ? '<span class="pill out">Sin stock</span>' : s === 1 ? '<span class="pill low">Último</span>' : '') + '</div></div>' +
+    (s <= 0 && p.soon ? '<span class="pill soon">Próximo ingreso</span>' : s <= 0 ? '<span class="pill out">Sin stock</span>' : s === 1 ? '<span class="pill low">Último</span>' : '') + '</div></div>' +
     (hasVar
       ? '<button class="var-btn" data-edit="' + esc(p.id) + '">' + p.variants.length + ' variantes<br>' + s + ' u.</button>'
       : '<div class="stepper"><button data-q="-1" aria-label="Restar stock">−</button><b>' + s + '</b><button data-q="1" aria-label="Sumar stock">+</button></div>') +
@@ -636,6 +665,7 @@ function openEditor(id) {
   $('#e-name').value = editing.name; $('#e-brand').value = editing.brand || ''; $('#e-type').value = editing.type || '';
   $('#e-price').value = editing.price || ''; $('#e-offer').value = editing.offer || 0; $('#e-mp').value = editing.mp || ''; $('#e-ml').value = editing.ml || '';
   editing.images = editing.images || []; $('#e-desc').value = editing.desc || '';
+  $('#e-tone').value = editing.tone || ''; $('#e-soon').checked = !!editing.soon;
   $('#e-hasvar').checked = editing.variants.length > 0;
   renderEditor();
   $('#sheet').classList.remove('hidden'); $('#sheet-bg').classList.remove('hidden');
@@ -658,7 +688,9 @@ function renderEditor() {
       '<input class="in" placeholder="Ej: Tono 02 Nude" value="' + esc(v.name) + '" data-vname="' + i + '">' +
       '<div class="stepper"><button type="button" data-vq="-1">−</button><b>' + (+v.stock || 0) + '</b><button type="button" data-vq="1">+</button></div>' +
       '<button class="vdel" type="button" data-vdel="' + i + '" aria-label="Borrar variante">×</button>' +
+      '<textarea class="in vdesc" rows="2" placeholder="Descripción de este tono (opcional)" data-vdesc="' + i + '">' + esc(v.desc || '') + '</textarea>' +
     '</div>').join('');
+  $('#e-tone-wrap').classList.toggle('hidden', hasVar);
 }
 $('#e-hasvar').addEventListener('change', (e) => {
   if (e.target.checked && !editing.variants.length) editing.variants = [{ name: '', stock: +editing.stock || 0, img: '' }];
@@ -666,7 +698,10 @@ $('#e-hasvar').addEventListener('change', (e) => {
 });
 $('#e-novar').addEventListener('click', (e) => { const b = e.target.closest('[data-st]'); if (b) { editing.stock = Math.max(0, (+editing.stock || 0) + +b.dataset.st); renderEditor(); } });
 $('#e-addvar').addEventListener('click', () => { editing.variants.push({ name: '', stock: 1, img: '' }); renderEditor(); const ins = document.querySelectorAll('[data-vname]'); ins[ins.length - 1].focus(); });
-$('#e-vlist').addEventListener('input', (e) => { const i = e.target.dataset.vname; if (i != null) editing.variants[i].name = e.target.value; });
+$('#e-vlist').addEventListener('input', (e) => {
+  const i = e.target.dataset.vname; if (i != null) editing.variants[i].name = e.target.value;
+  const d = e.target.dataset.vdesc; if (d != null) editing.variants[d].desc = e.target.value;
+});
 $('#e-vlist').addEventListener('click', (e) => {
   const row = e.target.closest('[data-v]'); if (!row) return;
   const v = editing.variants[+row.dataset.v];
@@ -703,16 +738,18 @@ $('#e-ok').addEventListener('click', () => {
   const name = $('#e-name').value.trim();
   if (!name) return toast('Poné un nombre al producto', true);
   const price = Math.max(0, Math.round(+$('#e-price').value || 0));
-  if (!price) return toast('Poné el precio', true);
+  const soon = $('#e-soon').checked;
+  if (!price && !soon) return toast('Poné el precio', true);
   const offer = Math.max(0, Math.round(+$('#e-offer').value || 0));
   if (offer && offer >= price) return toast('La oferta tiene que ser menor al precio', true);
   const hasVar = $('#e-hasvar').checked;
-  const variants = hasVar ? editing.variants.map((v) => Object.assign({ name: v.name.trim(), stock: +v.stock || 0, img: v.img || '' }, v.ml ? { ml: v.ml } : {})).filter((v) => v.name) : [];
+  const variants = hasVar ? editing.variants.map((v) => Object.assign({ name: v.name.trim(), stock: +v.stock || 0, img: v.img || '' }, v.ml ? { ml: v.ml } : {}, (v.desc || '').trim() ? { desc: v.desc.trim() } : {})).filter((v) => v.name) : [];
   if (hasVar && !variants.length) return toast('Escribí el nombre de al menos una variante', true);
   const p = {
     id: editing.id, name, brand: $('#e-brand').value.trim(), cat: catsOf(editing), type: $('#e-type').value.trim(),
     price, offer, stock: hasVar ? variants.reduce((a, v) => a + v.stock, 0) : +editing.stock || 0,
-    img: editing.img || '', images: editing.images || [], desc: $('#e-desc').value.trim(), mp: $('#e-mp').value.trim(), ml: $('#e-ml').value.trim(), variants, ...(editing.mlPrice ? { mlPrice: editing.mlPrice } : {})
+    img: editing.img || '', images: editing.images || [], desc: $('#e-desc').value.trim(), mp: $('#e-mp').value.trim(), ml: $('#e-ml').value.trim(), variants, ...(editing.mlPrice ? { mlPrice: editing.mlPrice } : {}),
+    ...(!hasVar && $('#e-tone').value.trim() ? { tone: $('#e-tone').value.trim() } : {}), ...(soon ? { soon: true } : {})
   };
   const i = products.findIndex((x) => x.id === p.id);
   if (i >= 0) products[i] = p; else products.unshift(p);
@@ -1031,6 +1068,43 @@ $('#calc-period').addEventListener('click', (e) => {
   calcDays = +b.dataset.days;
   document.querySelectorAll('#calc-period .chip').forEach((x) => x.classList.toggle('on', x === b));
   loadCalc();
+});
+
+// ---------- Coupons (saved in settings as a hash: the code itself is never published) ----------
+const couponHash = async (code) => {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('oi-cupon:' + code.trim().toUpperCase()));
+  return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
+};
+function renderCoupons() {
+  const list = settings.coupons || [];
+  const today = new Date().toISOString().slice(0, 10);
+  $('#coupons').innerHTML = list.length ? list.map((c, i) => {
+    const expired = c.until && c.until < today;
+    const state = c.active === false ? '<span class="status no">Pausado</span>' : expired ? '<span class="status no">Vencido</span>' : '<span class="status vendido">Activo</span>';
+    return '<article class="order-card"><header><h3>' + esc(c.label || '•••') + '</h3>' + state + '</header>' +
+      '<div class="when">' + (c.type === 'fixed' ? money.format(+c.value) : c.value + '%') + ' de descuento' +
+      (+c.min ? ' · compra mínima ' + money.format(+c.min) : '') + (c.until ? ' · vence ' + c.until.split('-').reverse().join('/') : '') + (c.note ? ' · ' + esc(c.note) : '') + '</div>' +
+      '<div class="order-btns"><button class="btn soft" data-ctog="' + i + '">' + (c.active === false ? 'Activar' : 'Pausar') + '</button><button class="btn danger" data-cdel="' + i + '">Borrar</button></div></article>';
+  }).join('') : '<p class="empty">Todavía no creaste cupones.</p>';
+}
+$('#c-add').addEventListener('click', async () => {
+  const code = $('#c-code').value.trim().toUpperCase().replace(/\s+/g, '');
+  const value = Math.round(+$('#c-value').value || 0), type = $('#c-type').value;
+  if (!/^[A-Z0-9_-]{3,30}$/.test(code)) return toast('El código tiene que tener 3 o más letras/números, sin espacios', true);
+  if (!value || (type === 'percent' && value > 90)) return toast(type === 'percent' ? 'Poné un % entre 1 y 90' : 'Poné el monto del descuento', true);
+  const h = await couponHash(code);
+  settings.coupons = settings.coupons || [];
+  if (settings.coupons.some((c) => c.h === h)) return toast('Ese código ya existe', true);
+  settings.coupons.unshift({ h, label: code.slice(0, 2) + '•'.repeat(Math.max(1, code.length - 3)) + code.slice(-1), type, value, min: Math.max(0, Math.round(+$('#c-min').value || 0)), until: $('#c-until').value || '', note: $('#c-note').value.trim(), active: true });
+  ['#c-code', '#c-value', '#c-min', '#c-until', '#c-note'].forEach((k) => { $(k).value = ''; });
+  renderCoupons(); updateSaveState(); $('#save').click();
+});
+$('#coupons').addEventListener('click', (e) => {
+  const t = e.target.closest('[data-ctog]'), d = e.target.closest('[data-cdel]');
+  if (t) { const c = settings.coupons[+t.dataset.ctog]; c.active = c.active === false; }
+  else if (d) { if (!confirm('¿Borrar el cupón ' + settings.coupons[+d.dataset.cdel].label + '?')) return; settings.coupons.splice(+d.dataset.cdel, 1); }
+  else return;
+  renderCoupons(); updateSaveState(); $('#save').click();
 });
 </script>
 </body>

@@ -5,7 +5,7 @@
  "heroText": "Elegí tus productos, armá tu pedido y mandalo por WhatsApp en segundos.",
  "badges": [
   "100% originales",
-  "Envío gratis en compras desde $100.000",
+  "Envío gratis desde $100.000 a CABA, Avellaneda y Lanús",
   "Entregas al día siguiente · lun a sáb de 9 a 18 hs",
   "5% off con transferencia"
  ],
@@ -13,7 +13,7 @@
  "phoneLabel": "011 5825-2255",
  "email": "mariaquintaleeuu@gmail.com",
  "place": "Avellaneda, Buenos Aires",
- "instagram": "https://instagram.com/ONLY_IMPORTSARG",
+ "instagram": "https://www.instagram.com/only_importsarg/",
  "tiktok": "https://www.tiktok.com/@onlyimports2",
  "transferDiscount": 5,
  "colors": {
@@ -41,5 +41,6 @@
   "caba25": 8990
  },
  "freeShippingFrom": 100000,
- "statsUrl": "https://onlyimports-api.mariaquintaleeuu.workers.dev"
+ "statsUrl": "https://onlyimports-api.mariaquintaleeuu.workers.dev",
+ "coupons": []
 }
