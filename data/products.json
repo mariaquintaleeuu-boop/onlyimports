@@ -1072,9 +1072,15 @@
   "type": "Labiales y gloss",
   "price": 35000,
   "offer": 0,
-  "stock": 2,
+  "stock": 1,
   "img": "img/p/1b8eee13c5d2128c.jpg",
+  "images": [
+   "img/p/6b2052fdf9e9e684.jpg",
+   "img/p/3edf8dcdc9bea96e.jpg"
+  ],
+  "desc": "",
   "mp": "",
+  "ml": "https://www.mercadolibre.com.ar/p/MLA67838906?pdp_filters=seller_id%3A2986264091",
   "variants": [
    {
     "name": "Mauve Mentality",
@@ -1089,17 +1095,11 @@
    },
    {
     "name": "Pink me energy",
-    "stock": 1,
+    "stock": 0,
     "img": "",
     "ml": "https://www.mercadolibre.com.ar/labial-elf-glow-reviver-slipstick/up/MLAU5730620444"
    }
-  ],
-  "images": [
-   "img/p/6b2052fdf9e9e684.jpg",
-   "img/p/3edf8dcdc9bea96e.jpg"
-  ],
-  "ml": "https://www.mercadolibre.com.ar/p/MLA67838906?pdp_filters=seller_id%3A2986264091",
-  "pop": 14
+  ]
  },
  {
   "id": "p30",
