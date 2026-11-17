@@ -304,10 +304,13 @@ async function mlRoutes(req, url, db, admin) {
     if (part === 'buybox') {
       const ids = (url.searchParams.get('ids') || '').split(',').filter((x) => /^MLA\d+$/.test(x)).slice(0, 40), out = {};
       for (const id of ids) {
-        const r = await fetch(ML + '/products/' + id, { headers: H });
-        if (!r.ok) continue;
-        const j = await r.json(), w = j.buy_box_winner;
-        out[id] = w ? { price: +w.price || 0, seller: w.seller_id, mine: String(w.seller_id) === String(tok.user) } : null;
+        const r = await fetch(ML + '/products/' + id + '/items?limit=10', { headers: H });
+        if (!r.ok) { out[id] = { err: r.status }; continue; }
+        const res = ((await r.json()).results || []).filter((x) => x && x.price);
+        if (!res.length) { out[id] = null; continue; }
+        const first = res[0], others = res.filter((x) => String(x.seller_id) !== String(tok.user));
+        const best = others.reduce((m, x) => (!m || x.price < m.price ? x : m), null);
+        out[id] = { price: +first.price, mine: String(first.seller_id) === String(tok.user), seller: first.seller_id, bestOther: best ? +best.price : null, sellers: res.length };
       }
       return json(req, { buybox: out });
     }

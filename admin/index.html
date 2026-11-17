@@ -1141,8 +1141,8 @@ function adviceFor(x) {
   const red = (t) => out.push(['bad', t]), warn = (t) => out.push(['warn', t]), ok = (t) => out.push(['ok', t]);
   if (x.status !== 'active') red(x.status === 'paused' ? 'Pausada: no aparece en Mercado Libre. Reponé stock o reactivala.' : 'Finalizada.');
   else if (!x.available_quantity) red('Sin stock: no se puede comprar.');
-  if (x.bb && !x.bb.mine && x.bb.price && x.bb.price < x.price) red('Perdés el botón "Comprar": otro vendedor lo ofrece a ' + money.format(x.bb.price) + ' (' + Math.round((1 - x.bb.price / x.price) * 100) + '% menos).');
-  if (x.bb && x.bb.mine) ok('Ganás el botón "Comprar".');
+  if (x.bb && x.bb.price && !x.bb.mine) red('Perdés el botón "Comprar": se lo lleva otro vendedor a ' + money.format(x.bb.price) + (x.bb.price < x.price ? ' (' + Math.round((1 - x.bb.price / x.price) * 100) + '% menos que vos)' : '') + '.');
+  else if (x.bb && x.bb.mine) { if (x.bb.bestOther && x.bb.bestOther < x.price) warn('Ganás el botón "Comprar", pero hay otro a ' + money.format(x.bb.bestOther) + '.'); else ok('Ganás el botón "Comprar".'); }
   if (x.status === 'active' && x.visits >= 20 && !x.units) red('Mucha gente la ve (' + x.visits + ' visitas) y nadie compra: revisá precio, fotos, título y descripción.');
   if (x.status === 'active' && x.visits != null && x.visits < 5) warn('Casi nadie la ve: mejorá el título con lo que busca la gente (marca + producto + tono + "original") o probá publicidad.');
   if (x.health != null && x.health < 0.75) red('Calidad de publicación baja (' + Math.round(x.health * 100) + '/100): sumá fotos con fondo blanco, completá la ficha técnica y la descripción.');
@@ -1155,7 +1155,7 @@ function renderMlMetrics(items, visits, ord, bb) {
   rows.forEach((x) => { x.adv = adviceFor(x); x.bad = x.adv.filter((a) => a[0] === 'bad').length; });
   rows.sort((a, c) => c.bad - a.bad || (c.visits || 0) - (a.visits || 0));
   const act = rows.filter((x) => x.status === 'active'), vis = act.reduce((a, x) => a + (x.visits || 0), 0);
-  const losing = rows.filter((x) => x.bb && !x.bb.mine && x.bb.price < x.price).length;
+  const losing = rows.filter((x) => x.status === 'active' && x.bb && x.bb.price && !x.bb.mine).length;
   const noStock = rows.filter((x) => x.status !== 'active' || !x.available_quantity).length;
   const lookNoBuy = act.filter((x) => x.visits >= 20 && !x.units).length;
   const conv = vis ? ord.orders / vis * 100 : 0;
