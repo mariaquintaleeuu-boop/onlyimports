@@ -166,6 +166,15 @@ textarea.in{resize:vertical;min-height:70px}
 .status.no{background:#fde8e8;color:var(--bad)}
 .status.pendiente{background:#fff3dc;color:#a8610a}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi.kbad{background:#fff0f0;box-shadow:inset 0 0 0 2px #f3b4b4}.kpi.kbad b{color:#d32f2f}
+.mlt td:first-child{display:block}
+.mlt tr.rbad td:first-child .pn a{color:#d32f2f}
+.adv{list-style:none;padding:0;margin:4px 0 0;font-size:12px;line-height:1.4}
+.adv li{padding:2px 0 2px 16px;position:relative}
+.adv li::before{content:'';position:absolute;left:2px;top:7px;width:8px;height:8px;border-radius:50%}
+.adv .bad{color:#d32f2f;font-weight:600}.adv .bad::before{background:#d32f2f}
+.adv .warn{color:#a8610a}.adv .warn::before{background:#f0a020}
+.adv .ok{color:#1a9a55}.adv .ok::before{background:#1a9a55}
 .toast{position:fixed;left:50%;top:14px;z-index:60;transform:translate(-50%,-120px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:999px;font-weight:600;font-size:14px;transition:transform .3s;white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis}
 .toast.show{transform:translate(-50%,0)}
 .toast.bad{background:var(--bad)}
@@ -1110,22 +1119,61 @@ $('#coupons').addEventListener('click', (e) => {
   renderCoupons(); updateSaveState(); $('#save').click();
 });
 
-// ---------- Mercado Libre metrics (visits, sales, conversion per listing) ----------
-$('#mlm-load').addEventListener('click', async () => {
-  const b = $('#mlm-load'); b.disabled = true; b.textContent = 'Cargando (tarda unos segundos)…';
-  let d;
-  try { d = await statsApi('/ml/metrics?days=30'); } catch (e) { b.disabled = false; b.textContent = 'Ver métricas de Mercado Libre'; return toast('No se pudieron traer las métricas.', true); }
-  b.classList.add('hidden');
-  const it = d.items.filter((x) => x.status !== 'closed').sort((a, c) => (c.visits || 0) - (a.visits || 0));
-  const vis = it.reduce((a, x) => a + (x.visits || 0), 0);
-  const conv = (x) => x.visits ? (x.units / x.visits * 100) : 0;
-  window.__mlm = d;
-  $('#mlm').innerHTML = '<div class="kpis"><div class="kpi"><span>Visitas</span><b>' + vis + '</b></div><div class="kpi"><span>Ventas</span><b>' + d.orders + '</b><small>' + money.format(d.revenue) + '</small></div>' +
-    '<div class="kpi"><span>Conversión</span><b>' + (vis ? (d.orders / vis * 100).toFixed(1) : 0) + '%</b></div><div class="kpi"><span>Publicaciones activas</span><b>' + it.filter((x) => x.status === 'active').length + '</b><small>de ' + it.length + '</small></div></div>' +
-    '<table class="ptable"><tr><th>Publicación</th><th>Visitas</th><th>Ventas</th><th>Conv.</th><th>Precio</th></tr>' +
-    it.map((x) => '<tr><td><div><div class="pn"><a href="' + esc(x.link) + '" target="_blank" rel="noopener">' + esc(x.title) + '</a></div><span style="font-size:11px;color:var(--muted)">' +
-      (x.status !== 'active' ? 'Pausada · ' : '') + 'stock ' + x.stock + (x.catalog ? ' · catálogo' : '') + '</span></div></td><td><b>' + (x.visits ?? '—') + '</b></td><td>' + x.units + '</td><td>' + conv(x).toFixed(1) + '%</td><td>' + money.format(x.price) + '</td></tr>').join('') + '</table>';
-});
+// ---------- Mercado Libre metrics: visits, sales, conversion and what to improve (bad things in red) ----------
+async function loadMlMetrics() {
+  const b = $('#mlm-load'); b.disabled = true;
+  const step = (t) => { b.textContent = t; };
+  try {
+    step('Leyendo publicaciones…');
+    const { items } = await statsApi('/ml/metrics?part=items');
+    const ids = items.map((x) => x.id), visits = {}, bb = {};
+    for (let i = 0; i < ids.length; i += 40) { step('Leyendo visitas… ' + Math.min(100, Math.round((i + 40) / ids.length * 100)) + '%'); Object.assign(visits, (await statsApi('/ml/metrics?part=visits&days=30&ids=' + ids.slice(i, i + 40).join(','))).visits); }
+    step('Leyendo ventas…');
+    const ord = await statsApi('/ml/metrics?part=orders&days=30');
+    const cat = [...new Set(items.filter((x) => x.catalog_product_id && x.status === 'active').map((x) => x.catalog_product_id))];
+    for (let i = 0; i < cat.length; i += 40) { step('Comparando con la competencia…'); Object.assign(bb, (await statsApi('/ml/metrics?part=buybox&ids=' + cat.slice(i, i + 40).join(','))).buybox); }
+    renderMlMetrics(items, visits, ord, bb);
+    b.classList.add('hidden');
+  } catch (e) { b.disabled = false; b.textContent = 'Ver métricas de Mercado Libre'; toast('No se pudieron traer las métricas. Probá de nuevo.', true); }
+}
+function adviceFor(x) {
+  const out = [];
+  const red = (t) => out.push(['bad', t]), warn = (t) => out.push(['warn', t]), ok = (t) => out.push(['ok', t]);
+  if (x.status !== 'active') red(x.status === 'paused' ? 'Pausada: no aparece en Mercado Libre. Reponé stock o reactivala.' : 'Finalizada.');
+  else if (!x.available_quantity) red('Sin stock: no se puede comprar.');
+  if (x.bb && !x.bb.mine && x.bb.price && x.bb.price < x.price) red('Perdés el botón "Comprar": otro vendedor lo ofrece a ' + money.format(x.bb.price) + ' (' + Math.round((1 - x.bb.price / x.price) * 100) + '% menos).');
+  if (x.bb && x.bb.mine) ok('Ganás el botón "Comprar".');
+  if (x.status === 'active' && x.visits >= 20 && !x.units) red('Mucha gente la ve (' + x.visits + ' visitas) y nadie compra: revisá precio, fotos, título y descripción.');
+  if (x.status === 'active' && x.visits != null && x.visits < 5) warn('Casi nadie la ve: mejorá el título con lo que busca la gente (marca + producto + tono + "original") o probá publicidad.');
+  if (x.health != null && x.health < 0.75) red('Calidad de publicación baja (' + Math.round(x.health * 100) + '/100): sumá fotos con fondo blanco, completá la ficha técnica y la descripción.');
+  if (x.units && x.visits && x.units / x.visits >= 0.03) ok('Vende bien: no te quedes sin stock.');
+  if (!out.length) ok('Sin problemas detectados.');
+  return out;
+}
+function renderMlMetrics(items, visits, ord, bb) {
+  const rows = items.map((x) => Object.assign(x, { visits: visits[x.id] ?? null, units: ord.per[x.id] || 0, bb: x.catalog_product_id ? bb[x.catalog_product_id] : null }));
+  rows.forEach((x) => { x.adv = adviceFor(x); x.bad = x.adv.filter((a) => a[0] === 'bad').length; });
+  rows.sort((a, c) => c.bad - a.bad || (c.visits || 0) - (a.visits || 0));
+  const act = rows.filter((x) => x.status === 'active'), vis = act.reduce((a, x) => a + (x.visits || 0), 0);
+  const losing = rows.filter((x) => x.bb && !x.bb.mine && x.bb.price < x.price).length;
+  const noStock = rows.filter((x) => x.status !== 'active' || !x.available_quantity).length;
+  const lookNoBuy = act.filter((x) => x.visits >= 20 && !x.units).length;
+  const conv = vis ? ord.orders / vis * 100 : 0;
+  const kpi = (label, val, sub, bad) => '<div class="kpi' + (bad ? ' kbad' : '') + '"><span>' + label + '</span><b>' + val + '</b><small>' + sub + '</small></div>';
+  $('#mlm').innerHTML = '<div class="kpis">' +
+      kpi('Visitas (30 días)', vis, act.length + ' publicaciones activas') +
+      kpi('Ventas (30 días)', ord.orders, money.format(ord.revenue), ord.orders < 15) +
+      kpi('Conversión', conv.toFixed(1) + '%', 'lo normal en maquillaje: 2% a 4%', conv < 2) +
+      kpi('Perdés el botón Comprar', losing, 'publicaciones de catálogo', losing > 0) +
+      kpi('Sin stock o pausadas', noStock, 'no venden', noStock > 0) +
+      kpi('Las ven y no compran', lookNoBuy, '20+ visitas, 0 ventas', lookNoBuy > 0) +
+    '</div>' +
+    '<table class="ptable mlt"><tr><th>Publicación</th><th>Visitas</th><th>Ventas</th><th>Precio</th></tr>' +
+    rows.map((x) => '<tr class="' + (x.bad ? 'rbad' : '') + '"><td><div><div class="pn"><a href="' + esc(x.permalink) + '" target="_blank" rel="noopener">' + esc(x.title) + '</a></div>' +
+      '<ul class="adv">' + x.adv.map((a) => '<li class="' + a[0] + '">' + esc(a[1]) + '</li>').join('') + '</ul></div></td>' +
+      '<td><b>' + (x.visits ?? '—') + '</b></td><td>' + x.units + '</td><td>' + money.format(x.price) + '</td></tr>').join('') + '</table>';
+}
+$('#mlm-load').addEventListener('click', loadMlMetrics);
 </script>
 </body>
 </html>

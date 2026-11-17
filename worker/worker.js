@@ -252,51 +252,68 @@ async function mlRoutes(req, url, db, admin) {
     return json(req, { configured: !!cfg, clientId: cfg ? cfg.id : '', connected: !!tok, nick: tok ? tok.nick : '', synced: await kvGet(db, 'ml_synced'), log: (await kvGet(db, 'ml_log')) || [] });
   }
   if (req.method === 'POST' && url.pathname === '/ml/sync') return json(req, await mlSync(db));
-  // Mercado Libre metrics per listing: visits, sales and conversion (last N days)
+  // Mercado Libre metrics, in small parts (the free plan allows ~50 requests per call)
   if (req.method === 'GET' && url.pathname === '/ml/metrics') {
     const tok = await mlToken(db);
     if (!tok) return json(req, { error: 'Mercado Libre no está conectado.' }, 400);
     const H = { Authorization: 'Bearer ' + tok.access };
+    const part = url.searchParams.get('part') || 'items';
     const days = Math.max(7, Math.min(+url.searchParams.get('days') || 30, 90));
-    const to = new Date(), from = new Date(Date.now() - days * 86400e3);
-    const iso = (d) => d.toISOString().slice(0, 10);
-    const ids = new Set();
-    for (let off = 0; off < 500; off += 100) {
-      const r = await fetch(ML + '/users/' + tok.user + '/items/search?limit=100&offset=' + off, { headers: H });
-      if (!r.ok) return json(req, { error: 'ML ' + r.status }, 502);
-      const j = await r.json(); (j.results || []).forEach((x) => ids.add(x));
-      if (!j.paging || off + 100 >= j.paging.total) break;
+    const to = new Date(), from = new Date(Date.now() - days * 86400e3), iso = (d) => d.toISOString().slice(0, 10);
+    if (part === 'items') {
+      const ids = new Set();
+      for (let off = 0; off < 500; off += 100) {
+        const r = await fetch(ML + '/users/' + tok.user + '/items/search?limit=100&offset=' + off, { headers: H });
+        if (!r.ok) return json(req, { error: 'ML ' + r.status }, 502);
+        const j = await r.json(); (j.results || []).forEach((x) => ids.add(x));
+        if (!j.paging || off + 100 >= j.paging.total) break;
+      }
+      for (const id of Object.keys((await kvGet(db, 'ml_items')) || {})) ids.add(id);
+      const list = [...ids], items = [];
+      for (let i = 0; i < list.length; i += 20) {
+        const r = await fetch(ML + '/items?ids=' + list.slice(i, i + 20).join(',') + '&attributes=id,title,price,available_quantity,sold_quantity,status,permalink,catalog_listing,listing_type_id,health,catalog_product_id,user_product_id', { headers: H });
+        if (r.ok) for (const x of await r.json()) if (x.code === 200) items.push(x.body);
+      }
+      return json(req, { items });
     }
-    const list = [...ids], items = {};
-    for (let i = 0; i < list.length; i += 20) {
-      const r = await fetch(ML + '/items?ids=' + list.slice(i, i + 20).join(',') + '&attributes=id,title,price,available_quantity,sold_quantity,status,permalink,catalog_listing,listing_type_id,health,date_created', { headers: H });
-      if (r.ok) for (const x of await r.json()) if (x.code === 200) items[x.body.id] = Object.assign(x.body, { visits: null, sales: 0, units: 0 });
+    if (part === 'visits') {
+      const ids = (url.searchParams.get('ids') || '').split(',').filter((x) => /^MLA\d+$/.test(x)).slice(0, 40);
+      const out = {};
+      const r = await fetch(ML + '/visits/items?ids=' + ids.join(',') + '&date_from=' + iso(from) + '&date_to=' + iso(to), { headers: H });
+      if (r.ok) { const j = await r.json(); for (const id of ids) out[id] = +((j || {})[id]) || 0; return json(req, { visits: out, via: 'multi' }); }
+      for (const id of ids) {
+        const rr = await fetch(ML + '/items/' + id + '/visits/time_window?last=' + days + '&unit=day', { headers: H });
+        out[id] = rr.ok ? ((await rr.json()).total_visits || 0) : null;
+      }
+      return json(req, { visits: out, via: 'single', multiStatus: r.status });
     }
-    // visits
-    for (let i = 0; i < list.length; i += 50) {
-      const r = await fetch(ML + '/visits/items?ids=' + list.slice(i, i + 50).join(',') + '&date_from=' + iso(from) + '&date_to=' + iso(to), { headers: H });
-      if (r.ok) { const j = await r.json(); for (const [id, v] of Object.entries(j || {})) if (items[id]) items[id].visits = +v || 0; }
-      else {
-        for (const id of list.slice(i, i + 50)) {
-          const rr = await fetch(ML + '/items/' + id + '/visits/time_window?last=' + days + '&unit=day', { headers: H });
-          if (rr.ok && items[id]) items[id].visits = (await rr.json()).total_visits || 0;
+    if (part === 'orders') {
+      const per = {}; let orders = 0, revenue = 0;
+      for (let off = 0; off < 1000; off += 50) {
+        const r = await fetch(ML + '/orders/search?seller=' + tok.user + '&order.status=paid&order.date_created.from=' + from.toISOString() + '&limit=50&offset=' + off, { headers: H });
+        if (!r.ok) return json(req, { error: 'ML ' + r.status }, 502);
+        const j = await r.json();
+        for (const o of j.results || []) {
+          orders++; revenue += +o.total_amount || 0;
+          for (const oi of o.order_items || []) per[oi.item.id] = (per[oi.item.id] || 0) + (+oi.quantity || 1);
         }
+        if (!j.paging || off + 50 >= j.paging.total) break;
       }
+      return json(req, { orders, revenue, per });
     }
-    // sales
-    let orders = 0, revenue = 0, errOrders = '';
-    for (let off = 0; off < 1000; off += 50) {
-      const r = await fetch(ML + '/orders/search?seller=' + tok.user + '&order.status=paid&order.date_created.from=' + from.toISOString() + '&limit=50&offset=' + off, { headers: H });
-      if (!r.ok) { errOrders = 'ML ' + r.status; break; }
-      const j = await r.json();
-      for (const o of j.results || []) {
-        orders++; revenue += +o.total_amount || 0;
-        for (const oi of o.order_items || []) { const it = items[oi.item.id]; if (it) { it.sales++; it.units += +oi.quantity || 1; } }
+    if (part === 'buybox') {
+      const ids = (url.searchParams.get('ids') || '').split(',').filter((x) => /^MLA\d+$/.test(x)).slice(0, 40), out = {};
+      for (const id of ids) {
+        const r = await fetch(ML + '/products/' + id, { headers: H });
+        if (!r.ok) continue;
+        const j = await r.json(), w = j.buy_box_winner;
+        out[id] = w ? { price: +w.price || 0, seller: w.seller_id, mine: String(w.seller_id) === String(tok.user) } : null;
       }
-      if (!j.paging || off + 50 >= j.paging.total) break;
+      return json(req, { buybox: out });
     }
-    return json(req, { days, orders, revenue, errOrders, items: Object.values(items).map((x) => ({ id: x.id, title: x.title, price: x.price, stock: x.available_quantity, soldTotal: x.sold_quantity, status: x.status, catalog: x.catalog_listing, type: x.listing_type_id, health: x.health, visits: x.visits, sales: x.sales, units: x.units, link: x.permalink })) });
+    return json(req, { error: 'part' }, 400);
   }
+
   return null;
 }
 
