@@ -275,6 +275,9 @@ textarea.in{resize:vertical;min-height:70px}
       <button class="chip" data-days="365">1 año</button>
     </div>
     <div id="calc"><p class="empty">Cargando…</p></div>
+    <div class="card" id="mlm-card"><h2>Mercado Libre: visitas y ventas por publicación</h2>
+      <p style="font-size:12px;color:var(--muted);margin:-6px 0 8px">Últimos 30 días. Conversión = de cada 100 visitas, cuántas compraron.</p>
+      <button class="btn soft" id="mlm-load" style="width:100%">Ver métricas de Mercado Libre</button><div id="mlm"></div></div>
   </main>
 
   <!-- Coupons tab -->
@@ -1105,6 +1108,23 @@ $('#coupons').addEventListener('click', (e) => {
   else if (d) { if (!confirm('¿Borrar el cupón ' + settings.coupons[+d.dataset.cdel].label + '?')) return; settings.coupons.splice(+d.dataset.cdel, 1); }
   else return;
   renderCoupons(); updateSaveState(); $('#save').click();
+});
+
+// ---------- Mercado Libre metrics (visits, sales, conversion per listing) ----------
+$('#mlm-load').addEventListener('click', async () => {
+  const b = $('#mlm-load'); b.disabled = true; b.textContent = 'Cargando (tarda unos segundos)…';
+  let d;
+  try { d = await statsApi('/ml/metrics?days=30'); } catch (e) { b.disabled = false; b.textContent = 'Ver métricas de Mercado Libre'; return toast('No se pudieron traer las métricas.', true); }
+  b.classList.add('hidden');
+  const it = d.items.filter((x) => x.status !== 'closed').sort((a, c) => (c.visits || 0) - (a.visits || 0));
+  const vis = it.reduce((a, x) => a + (x.visits || 0), 0);
+  const conv = (x) => x.visits ? (x.units / x.visits * 100) : 0;
+  window.__mlm = d;
+  $('#mlm').innerHTML = '<div class="kpis"><div class="kpi"><span>Visitas</span><b>' + vis + '</b></div><div class="kpi"><span>Ventas</span><b>' + d.orders + '</b><small>' + money.format(d.revenue) + '</small></div>' +
+    '<div class="kpi"><span>Conversión</span><b>' + (vis ? (d.orders / vis * 100).toFixed(1) : 0) + '%</b></div><div class="kpi"><span>Publicaciones activas</span><b>' + it.filter((x) => x.status === 'active').length + '</b><small>de ' + it.length + '</small></div></div>' +
+    '<table class="ptable"><tr><th>Publicación</th><th>Visitas</th><th>Ventas</th><th>Conv.</th><th>Precio</th></tr>' +
+    it.map((x) => '<tr><td><div><div class="pn"><a href="' + esc(x.link) + '" target="_blank" rel="noopener">' + esc(x.title) + '</a></div><span style="font-size:11px;color:var(--muted)">' +
+      (x.status !== 'active' ? 'Pausada · ' : '') + 'stock ' + x.stock + (x.catalog ? ' · catálogo' : '') + '</span></div></td><td><b>' + (x.visits ?? '—') + '</b></td><td>' + x.units + '</td><td>' + conv(x).toFixed(1) + '%</td><td>' + money.format(x.price) + '</td></tr>').join('') + '</table>';
 });
 </script>
 </body>
