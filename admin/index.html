@@ -392,7 +392,7 @@ textarea.in{resize:vertical;min-height:70px}
   </div>
 
   <div class="box">
-    <label class="switch"><input type="checkbox" id="e-soon"> <b>Próximo ingreso</b> (todavía no llegó: se muestra con el cartel "Próximo ingreso" y el botón "Avisame cuando llegue")</label>
+    <label class="switch"><input type="checkbox" id="e-soon"> <b>Preventa</b> (próximo ingreso: todavía no llegó. Se muestra en la sección "Preventa" con el botón "Reservar por WhatsApp")</label>
   </div>
   <div class="box">
     <label class="switch"><input type="checkbox" id="e-hasvar"> Tiene variantes (tonos, colores, diseños)</label>
@@ -627,7 +627,7 @@ function rowHTML(p) {
     '<img src="' + esc(imgSrc(p.img)) + '" alt="" loading="lazy">' +
     '<div class="info" data-edit="' + esc(p.id) + '"><div class="name">' + esc(p.name || 'Sin nombre') + '</div>' +
     '<div class="meta">' + esc(p.brand || '') + (p.brand ? ' · ' : '') + price + ' ' +
-    (s <= 0 && p.soon ? '<span class="pill soon">Próximo ingreso</span>' : s <= 0 ? '<span class="pill out">Sin stock</span>' : s === 1 ? '<span class="pill low">Último</span>' : '') + '</div></div>' +
+    (s <= 0 && p.soon ? '<span class="pill soon">Preventa</span>' : s <= 0 ? '<span class="pill out">Sin stock</span>' : s === 1 ? '<span class="pill low">Último</span>' : '') + '</div></div>' +
     (hasVar
       ? '<button class="var-btn" data-edit="' + esc(p.id) + '">' + p.variants.length + ' variantes<br>' + s + ' u.</button>'
       : '<div class="stepper"><button data-q="-1" aria-label="Restar stock">−</button><b>' + s + '</b><button data-q="1" aria-label="Sumar stock">+</button></div>') +

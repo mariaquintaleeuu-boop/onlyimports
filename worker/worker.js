@@ -284,6 +284,18 @@ export default {
           .bind(str(o.id, 12), Date.now(), str(o.name, 80), JSON.stringify(items), Math.max(0, Math.round(+o.total || 0)), str(o.delivery, 80), str(o.source, 20)).run();
         return json(req, { ok: true });
       }
+      // ---- public: "most wanted" scores for ordering the shop (no personal data) ----
+      if (req.method === 'GET' && url.pathname === '/popular') {
+        const from = today(Date.now() - 29 * 86400e3);
+        const ev = await db.prepare("SELECT pid, SUM(CASE type WHEN 'open' THEN 1 WHEN 'add' THEN 3 WHEN 'buy_now' THEN 3 WHEN 'ml' THEN 1 ELSE 0 END) s FROM events WHERE day >= ? AND pid != '' GROUP BY pid").bind(from).all();
+        const out = {};
+        for (const r of ev.results) out[r.pid] = (out[r.pid] || 0) + r.s;
+        const os = await db.prepare("SELECT items FROM orders WHERE status = 'vendido' AND ts >= ?").bind(Date.parse(from + 'T03:00:00Z')).all();
+        for (const o of os.results) for (const it of JSON.parse(o.items || '[]')) out[it.pid] = (out[it.pid] || 0) + 10 * (+it.q || 1);
+        const ms = await db.prepare("SELECT pid, SUM(qty) q FROM ml_sales WHERE ts >= ? AND pid != '' GROUP BY pid").bind(Date.parse(from + 'T03:00:00Z')).all();
+        for (const r of ms.results) out[r.pid] = (out[r.pid] || 0) + 10 * r.q;
+        return new Response(JSON.stringify(out), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600', ...cors(req) } });
+      }
       // ---- public: product suggestion ("traigan este producto") ----
       if (req.method === 'POST' && url.pathname === '/suggest') {
         const b = JSON.parse(await req.text());

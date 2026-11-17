@@ -90,6 +90,7 @@ a{color:inherit}
 .filters{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
 .chip{flex:none;border:2px solid transparent;border-radius:999px;padding:9px 18px;background:#ffffffd9;font-weight:600;font-size:14px;color:var(--ink);transition:.2s;white-space:nowrap}
 .chip:hover{border-color:#ead9ff}
+.chip-pre{background:linear-gradient(90deg,#a66bff,#ff5fa2)!important;color:#fff!important;border-color:transparent!important}
 .chip.on{background:var(--ink);color:#fff}
 .filters select{appearance:none;-webkit-appearance:none;border:2px solid #ead9ff;border-radius:999px;padding:9px 38px 9px 16px;font:inherit;font-size:14px;font-weight:600;color:var(--ink);background:#fffffff2 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%233a2347' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E") no-repeat right 12px center/20px;cursor:pointer;max-width:100%}
 .filters select.on{border-color:var(--ink)}
@@ -453,6 +454,7 @@ footer .soc svg{width:18px;height:18px;fill:currentColor}
 <aside class="menu" id="menu" aria-label="Categorías">
   <header><h2>Explorar</h2><button class="close" id="close-menu" aria-label="Cerrar">×</button></header>
   <nav class="menu-body" id="menu-body"></nav>
+  <a class="menu-ask hidden" href="#catalogo" id="menu-pre">✦ Ver productos en preventa</a>
   <a class="menu-ask" href="#pedinos" id="menu-ask">✦ ¿No encontrás algo? Pedinos que lo traigamos</a>
 </aside>
 <aside class="drawer" id="drawer" aria-label="Mi pedido">
@@ -601,6 +603,11 @@ function start(STORE, PRODUCTS) {
   const CAT_ORDER = STORE.categoryOrder || [];
   const OTHER_BRAND = 'Otras marcas';
   const state = { cat: '', type: '', brand: '', stock: false, offer: false, q: '' };
+  const isSoon = (p) => !!p.soon && stockOf(p) <= 0;
+  // Most wanted first: live clicks/sales from the shop's statistics when available, else demand seen in Mercado Libre
+  let LIVE_POP = {};
+  const popOf = (p) => (LIVE_POP[p.id] || 0) + (+p.pop || 0);
+  const rankOf = (p) => stockOf(p) > 0 ? 2 : isSoon(p) ? 1 : 0;
   const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   const cats = (p) => [].concat(p.cat || []);
 
@@ -613,7 +620,10 @@ function start(STORE, PRODUCTS) {
     .concat(brandCount[OTHER_BRAND] ? [OTHER_BRAND] : []);
 
   // Category chips + selects
+  const PRE = '__preventa';
+  const hasPre = PRODUCTS.some((p) => isSoon(p));
   $('#cats').innerHTML = '<button class="chip" data-cat="">Todo</button>' +
+    (hasPre ? '<button class="chip chip-pre" data-cat="' + PRE + '">✦ Preventa</button>' : '') +
     catList.map((c) => '<button class="chip" data-cat="' + esc(c) + '">' + esc(c) + '</button>').join('');
   $('#f-type').innerHTML = '<option value="">Todos los tipos</option>' + typeList.map((t) => '<option>' + esc(t) + '</option>').join('');
   $('#f-brand').innerHTML = '<option value="">Todas las marcas</option>' + brandList.map((b) => '<option>' + esc(b) + '</option>').join('');
@@ -640,19 +650,18 @@ function start(STORE, PRODUCTS) {
   }
 
   const cardMl = (p, i) => (p.variants[i] && p.variants[i].ml) || p.ml || '';
-  const isSoon = (p) => !!p.soon && stockOf(p) <= 0;
   function cardHTML(p) {
     const out = stockOf(p) <= 0, soon = isSoon(p);
     const firstV = p.variants.findIndex((v) => +v.stock > 0);
     const fp = finalPrice(p);
     const off = fp < p.price ? Math.round((1 - fp / p.price) * 100) : 0;
-    if (soon) return '<article class="card soon"><span class="soon-label">PRÓXIMO INGRESO</span>' +
+    if (soon) return '<article class="card soon"><span class="soon-label">PREVENTA</span>' +
       '<div class="media" data-open="' + esc(p.id) + '"><img src="' + imgUrl(p) + '" alt="' + esc(p.name) + '" loading="lazy" decoding="async"></div>' +
       '<p class="brand">' + (p.brand && p.brand !== OTHER_BRAND ? esc(p.brand) : '&nbsp;') + '</p>' +
       '<h3 data-open="' + esc(p.id) + '">' + esc(p.name) + '</h3>' +
       '<p class="price">' + (p.price ? money.format(fp) : 'Precio a confirmar') + '</p>' +
-      '<p class="transfer">Llega pronto ✦</p>' +
-      '<div class="actions"><button class="add" data-ask="' + esc(p.id) + '">Avisame cuando llegue</button></div></article>';
+      '<p class="transfer">Próximo ingreso · reservalo antes que nadie ✦</p>' +
+      '<div class="actions"><button class="add" data-ask="' + esc(p.id) + '">Reservar por WhatsApp</button></div></article>';
     return '<article class="card' + (out ? ' out' : '') + '">' +
       (off ? '<span class="tag">' + off + '% OFF</span>' : mlOff(p) ? '<span class="tag">' + mlOff(p) + '% menos que en ML</span>' : '') +
       (out ? '<span class="out-label">SIN STOCK</span>' : '') +
@@ -674,17 +683,16 @@ function start(STORE, PRODUCTS) {
       '</div></article>';
   }
 
-  const rankOf = (p) => stockOf(p) > 0 ? 2 : isSoon(p) ? 1 : 0;
   function render() {
     const q = norm(state.q.trim());
     const list = PRODUCTS.filter((p) =>
-      (!state.cat || cats(p).includes(state.cat)) &&
+      (!state.cat || (state.cat === PRE ? isSoon(p) : cats(p).includes(state.cat))) &&
       (!state.type || p.type === state.type) &&
       (!state.brand || p.brand === state.brand) &&
       (!state.stock || stockOf(p) > 0) &&
       (!state.offer || finalPrice(p) < p.price) &&
       (!q || norm(p.name + ' ' + (p.brand || '') + ' ' + (p.type || '')).includes(q))
-    ).sort((a, b) => rankOf(b) - rankOf(a)); // available first, then "próximo ingreso", then out of stock
+    ).sort((a, b) => rankOf(b) - rankOf(a) || (state.q ? 0 : popOf(b) - popOf(a))); // available (most wanted first), then preventa, then out of stock
     $('#grid').innerHTML = list.map(cardHTML).join('');
     $('#empty').hidden = list.length > 0;
     $('#status').textContent = list.length + (list.length === 1 ? ' producto' : ' productos');
@@ -772,6 +780,8 @@ function start(STORE, PRODUCTS) {
     addEventListener('pagehide', stop);
     return t;
   })();
+  // live "most wanted" scores (clicks + sales of the last 30 days); the page reorders when they arrive
+  if (STORE.statsUrl) fetch(STORE.statsUrl + '/popular').then((r) => r.ok ? r.json() : {}).then((j) => { if (j && typeof j === 'object') { LIVE_POP = j; render(); } }).catch(() => {});
   const sendOrder = (o) => {
     if (!STORE.statsUrl) return;
     let admin = false; try { admin = !!localStorage.getItem('oi-admin-token'); } catch (e) {}
@@ -809,7 +819,7 @@ function start(STORE, PRODUCTS) {
   // ---------- Product detail (photos, description, buy now) ----------
   let pmId = null;
   const photosOf = (p) => [p.img].concat(p.images || []).filter(Boolean).filter((x, i, a) => a.indexOf(x) === i);
-  const askText = (id) => isSoon(byId[id]) ? '¡Hola! Avisame cuando llegue "' + byId[id].name + '", por favor 💖' : '¡Hola! ¿Cuándo vuelve a entrar "' + byId[id].name + '"?';
+  const askText = (id) => isSoon(byId[id]) ? '¡Hola! Quiero reservar en preventa "' + byId[id].name + '" 💖 ¿Cuándo llega?' : '¡Hola! ¿Cuándo vuelve a entrar "' + byId[id].name + '"?';
   // Tone line + the selected tone's own description
   function showTone(p, v) {
     const tone = v ? v.name : p.tone;
@@ -845,7 +855,7 @@ function start(STORE, PRODUCTS) {
     const sim = similarTo(p);
     $('#pm-sim-grid').innerHTML = sim.map((x) => '<button class="sim" data-sim="' + esc(x.id) + '"><img src="' + imgUrl(x) + '" alt="" loading="lazy"><span>' + esc(x.name) + '</span><b>' + money.format(finalPrice(x)) + '</b></button>').join('');
     $('#pm-sim').classList.toggle('hidden', !sim.length);
-    $('#pm-ask').textContent = isSoon(p) ? 'Próximo ingreso · Avisame cuando llegue' : 'Sin stock · Consultar ingreso';
+    $('#pm-ask').textContent = isSoon(p) ? 'Preventa · Reservar por WhatsApp' : 'Sin stock · Consultar ingreso';
     $('.pm-box').scrollTop = 0;
     $('#pm-var').innerHTML = !out && p.variants.length ? '<span>Elegí una opción</span><select class="variant" id="pm-vsel">' +
       p.variants.map((v, i) => '<option value="' + i + '"' + (+v.stock > 0 ? '' : ' disabled') + (i === firstV ? ' selected' : '') + '>' + esc(v.name) + (+v.stock > 0 ? '' : ' (sin stock)') + '</option>').join('') + '</select>' : '';
@@ -1277,6 +1287,7 @@ function start(STORE, PRODUCTS) {
   $('#open-menu').addEventListener('click', () => openPanel('menu', true));
   $('#close-menu').addEventListener('click', () => openPanel('menu', false));
   $('#menu-ask').addEventListener('click', () => openPanel('menu', false));
+  if (hasPre) { $('#menu-pre').classList.remove('hidden'); $('#menu-pre').addEventListener('click', () => { state.cat = PRE; render(); openPanel('menu', false); }); }
   $('#overlay').addEventListener('click', closeAll);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAll(); });
 
