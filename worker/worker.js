@@ -288,18 +288,20 @@ async function mlRoutes(req, url, db, admin) {
       return json(req, { visits: out, via: 'single', multiStatus: r.status });
     }
     if (part === 'orders') {
-      const per = {}; let orders = 0, revenue = 0;
+      const per = {}, list = []; let orders = 0, revenue = 0;
       for (let off = 0; off < 1000; off += 50) {
-        const r = await fetch(ML + '/orders/search?seller=' + tok.user + '&order.status=paid&order.date_created.from=' + from.toISOString() + '&limit=50&offset=' + off, { headers: H });
+        const r = await fetch(ML + '/orders/search?seller=' + tok.user + '&order.status=paid&order.date_created.from=' + from.toISOString().replace('Z', '-00:00') + '&sort=date_desc&limit=50&offset=' + off, { headers: H });
         if (!r.ok) return json(req, { error: 'ML ' + r.status }, 502);
         const j = await r.json();
         for (const o of j.results || []) {
+          if (o.date_created && Date.parse(o.date_created) < from.getTime()) continue; // safety: only the chosen period
           orders++; revenue += +o.total_amount || 0;
+          list.push({ id: o.id, date: o.date_created, status: o.status, total: o.total_amount, buyer: o.buyer && o.buyer.id === tok.user ? 'self' : '', items: (o.order_items || []).map((oi) => (+oi.quantity || 1) + 'x ' + oi.item.title) });
           for (const oi of o.order_items || []) per[oi.item.id] = (per[oi.item.id] || 0) + (+oi.quantity || 1);
         }
         if (!j.paging || off + 50 >= j.paging.total) break;
       }
-      return json(req, { orders, revenue, per });
+      return json(req, { orders, revenue, per, list, seller: tok.user, nick: tok.nick });
     }
     if (part === 'buybox') {
       const ids = (url.searchParams.get('ids') || '').split(',').filter((x) => /^MLA\d+$/.test(x)).slice(0, 40), out = {};
