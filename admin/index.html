@@ -1168,6 +1168,9 @@ function renderMlMetrics(items, visits, ord, bb) {
       kpi('Sin stock o pausadas', noStock, 'no venden', noStock > 0) +
       kpi('Las ven y no compran', lookNoBuy, '20+ visitas, 0 ventas', lookNoBuy > 0) +
     '</div>' +
+    '<details class="card" style="margin:10px 0"><summary style="cursor:pointer;font-weight:700">Ver las ' + ord.orders + ' ventas una por una (con fecha), para controlar</summary><ul style="font-size:13px;line-height:1.6;padding-left:18px;margin:8px 0 0">' +
+      (ord.list || []).map((o) => '<li><b>' + new Date(o.date).toLocaleDateString('es-AR') + '</b> · ' + money.format(o.total) + ' · ' + esc(o.items.join(' + ')) + '</li>').join('') + '</ul></details>' +
+    '<p style="font-size:12px;color:var(--muted)">"Ventas" = ventas pagadas de la cuenta ' + esc(ord.nick || '') + ' en los últimos 30 días, según Mercado Libre. No es el número "X vendidos" que muestra cada publicación (ese es de toda la vida, y en catálogo suma a todos los vendedores).</p>' +
     '<table class="ptable mlt"><tr><th>Publicación</th><th>Visitas</th><th>Ventas</th><th>Precio</th></tr>' +
     rows.map((x) => '<tr class="' + (x.bad ? 'rbad' : '') + '"><td><div><div class="pn"><a href="' + esc(x.permalink) + '" target="_blank" rel="noopener">' + esc(x.title) + '</a></div>' +
       '<ul class="adv">' + x.adv.map((a) => '<li class="' + a[0] + '">' + esc(a[1]) + '</li>').join('') + '</ul></div></td>' +
